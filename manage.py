@@ -8,7 +8,7 @@ from decouple import config
 def main():
     """Run administrative tasks."""
     env_id= config("HUBBLY_ENV_ID", default = "local")
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'settins.env.{env_id}')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'settings.env.{env_id}')
     
     try:
         from django.core.management import execute_from_command_line

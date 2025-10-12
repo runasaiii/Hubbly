@@ -80,3 +80,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SECRET_KEY = 'django-insecure-&@g*01o-j&nd)i_b2#ut#$2c+obrtpw1$lny!$97k3q($itwxi'
+
+AUTH_USER_MODEL = 'users.User'
