@@ -2,7 +2,7 @@ from django.db import models
 import uuid
 from apps.users.models import User  
 from apps.communities.models import Community
-
+from apps.abstracts.models import AbstractBaseModule
 
 class Tag(models.Model):
     MAX_LENGTH = 50
@@ -20,7 +20,7 @@ class Tag(models.Model):
         return self.name
 
 
-class Post(models.Model):
+class Post(AbstractBaseModule):
     id = models.UUIDField(
         primary_key = True,
         default = uuid.uuid4,
@@ -45,13 +45,12 @@ class Post(models.Model):
         related_name = 'posts',
         blank = True
     )
-    created_at = models.DateTimeField(auto_now_add = True)
 
     def __str__(self):
         return f"Post by {self.author.username} at {self.created_at}"
     
 
-class Comment(models.Model):
+class Comment(AbstractBaseModule):
     id = models.UUIDField(
         primary_key = True,
         default = uuid.uuid4,
@@ -74,7 +73,7 @@ class Comment(models.Model):
         blank = True
     )
     content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add = True)
+
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.id}"

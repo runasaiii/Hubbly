@@ -1,9 +1,9 @@
 from django.db import models
 import uuid
 from apps.users.models import User
+from apps.abstracts.models import AbstractBaseModule
 
-
-class Community(models.Model):
+class Community(AbstractBaseModule):
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('private', 'Private'),
@@ -25,7 +25,6 @@ class Community(models.Model):
         default='public'
     )
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_communities')
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name

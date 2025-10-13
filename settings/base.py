@@ -24,6 +24,8 @@ PROJECT_APPS = [
     "apps.posts.apps.PostsConfig",
     "apps.communities.apps.CommunitiesConfig",
     "apps.events.apps.EventsConfig",
+    "apps.notifications.apps.NotificationsConfig",
+    "apps.abstracts.apps.AbstractsConfig",
 ]
 INSTALLED_APPS = DJANGO_AND_THIRD_PARTY_APPS + PROJECT_APPS
 
