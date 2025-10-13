@@ -3,6 +3,7 @@ import uuid
 from apps.users.models import User
 from apps.communities.models import Community
 
+
 class Event(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),

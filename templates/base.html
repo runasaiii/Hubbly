@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Hubbly{% endblock %}</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; color: #0f172a; background: #f8fafc; }
+    header { background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 16px; }
+    .nav { display: flex; gap: 16px; align-items: center; }
+    .nav a { color: #0f172a; text-decoration: none; padding: 8px 12px; border-radius: 8px; }
+    .nav a:hover { background: #f1f5f9; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .muted { color: #475569; }
+    footer { color: #475569; padding: 32px 0; text-align: center; }
+  </style>
+  {% block head %}{% endblock %}
+  {% load static %}
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <strong>Hubbly</strong>
+      <a href="/">Home</a>
+      <a href="/users/">Users</a>
+      <a href="/posts/">Posts</a>
+      <a href="/events/">Events</a>
+      <a href="/communities/">Communities</a>
+      <span style="margin-left:auto"></span>
+      <a href="/admin/">Admin</a>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="container muted">© {{ now|default:2025 }} Hubbly</div>
+  </footer>
+</body>
+</html>
+
+

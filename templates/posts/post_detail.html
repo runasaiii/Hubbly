@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Post • Hubbly{% endblock %}
+{% block content %}
+  <a href="/posts/page/">← Back to posts</a>
+  <div class="card">
+    <div class="muted">{{ post.created_at|date:"Y-m-d H:i" }} by {{ post.author.username }}</div>
+    <p style="margin-top:12px;">{{ post.content }}</p>
+    {% if post.tags.all %}
+      <p class="muted">Tags: {% for t in post.tags.all %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    {% endif %}
+  </div>
+{% endblock %}
+
+

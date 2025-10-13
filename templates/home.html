@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Home • Hubbly{% endblock %}
+{% block content %}
+  <h1>Welcome to Hubbly</h1>
+  <div class="grid">
+    <div class="card">
+      <h3>Users</h3>
+      <p class="muted">See registered users and profiles.</p>
+      <p><a href="/users/">Open Users →</a></p>
+    </div>
+    <div class="card">
+      <h3>Posts</h3>
+      <p class="muted">See all posts across communities.</p>
+      <p><a href="/posts/">Open Posts →</a></p>
+    </div>
+    <div class="card">
+      <h3>Events</h3>
+      <p class="muted">Discover upcoming and past events.</p>
+      <p><a href="/events/">Open Events →</a></p>
+    </div>
+    <div class="card">
+      <h3>Communities</h3>
+      <p class="muted">Explore communities and memberships.</p>
+      <p><a href="/communities/">Open Communities →</a></p>
+    </div>
+  </div>
+{% endblock %}
+
+

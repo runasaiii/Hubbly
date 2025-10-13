@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Events • Hubbly{% endblock %}
+{% block content %}
+  <h1>Events</h1>
+  <p class="muted">Upcoming and past events.</p>
+  <div class="grid">
+    {% for event in events %}
+      <div class="card">
+        <h3>{{ event.title }}</h3>
+        <p class="muted">{{ event.start_at|date:"Y-m-d H:i" }} → {{ event.end_at|date:"Y-m-d H:i" }}</p>
+        <p class="muted">Status: {{ event.status }}</p>
+        <p><a href="/events/{{ event.id }}/">View →</a></p>
+      </div>
+    {% empty %}
+      <p class="muted">No events.</p>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Users • Hubbly{% endblock %}
+{% block content %}
+  <h1>Users</h1>
+  <p class="muted">A list of all registered users.</p>
+  <div class="grid">
+    {% for u in users %}
+      <div class="card">
+        <h3>{{ u.username }}</h3>
+        <p class="muted">{{ u.email }}</p>
+        <p><a href="/users/{{ u.id }}/">View profile →</a></p>
+      </div>
+    {% empty %}
+      <p class="muted">No users.</p>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+

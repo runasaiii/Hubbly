@@ -10,12 +10,14 @@ ASGI_APPLICATION = 'settings.asgi.application'
 
 # APPS
 DJANGO_AND_THIRD_PARTY_APPS = [
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
 ]
 PROJECT_APPS = [
     "apps.users.apps.UsersConfig",

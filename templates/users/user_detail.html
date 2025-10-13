@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ user_obj.username }} • Hubbly{% endblock %}
+{% block content %}
+  <a href="/users/page/">← Back to users</a>
+  <h1>{{ user_obj.username }}</h1>
+  <p class="muted">{{ user_obj.email }}</p>
+  <div class="card" style="margin-top:16px;">
+    {% if user_obj.profile %}
+      <h3>{{ user_obj.profile.display_name|default:user_obj.username }}</h3>
+      <p class="muted">{{ user_obj.profile.bio|default:"No bio yet." }}</p>
+      <p class="muted">Location: {{ user_obj.profile.location|default:"—" }}</p>
+      {% if user_obj.profile.interests %}
+        <p class="muted">Interests: {{ user_obj.profile.interests|join:", " }}</p>
+      {% endif %}
+    {% else %}
+      <p class="muted">No profile information.</p>
+    {% endif %}
+  </div>
+{% endblock %}
+
+
