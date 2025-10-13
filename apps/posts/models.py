@@ -3,6 +3,7 @@ import uuid
 from apps.users.models import User  
 from apps.communities.models import Community
 from apps.abstracts.models import AbstractBaseModule
+from apps.users.models import User
 
 class Tag(models.Model):
     MAX_LENGTH = 50
@@ -73,7 +74,39 @@ class Comment(AbstractBaseModule):
         blank = True
     )
     content = models.TextField()
-
-
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.id}"
+
+class PostTag(models.Model):
+    post_id = models.ForeignKey(
+        to=Post,
+        on_delete = models.CASCADE,
+        default = uuid.uuid4,
+    )
+    tag_id = models.ForeignKey(
+        to=Tag,
+        on_delete=models.CASCADE,
+        default = uuid.uuid4,
+    )
+    def __str__(self):
+        return f"Post Id: {self.post_id} Tag Id: {self.tag_id}"
+
+class Report(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    reporter = models.ForeignKey(
+        to=User,
+        on_delete=models.CASCADE,
+        related_name='reports_made',
+    )
+    reason = models.TextField()
+    status = models.CharField()
+    handled_by = models.ForeignKey(
+        to=User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reports_handled",
+    )

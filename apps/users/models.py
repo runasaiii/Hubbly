@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser as Abs
 import uuid
-
+from apps.abstracts.models import AbstractBaseModule
 
 class User(Abs):
     MAX_LENGTH = 150
@@ -63,3 +63,18 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.display_name or str(self.user.username)
+
+class Media(AbstractBaseModule):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    owner = models.ForeignKey(
+        to=User,
+        on_delete=models.CASCADE,
+        related_name='media',
+    )
+    media_type = models.CharField()
+    def __str__(self):
+        return f"{self.media_type}"

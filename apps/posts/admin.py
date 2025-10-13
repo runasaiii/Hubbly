@@ -1,9 +1,15 @@
-from django.contrib import admin
+from django.contrib.admin import register
 from unfold.admin import ModelAdmin
-from .models import Post, Comment, Tag
+from .models import (
+    Post,
+    Comment,
+    Tag,
+    PostTag,
+    Report
+)
 
 
-@admin.register(Post)
+@register(Post)
 class PostAdmin(ModelAdmin):
     list_display = ('id', 'author', 'community', 'pinned', 'created_at')
     list_filter = ('pinned', 'community')
@@ -11,16 +17,23 @@ class PostAdmin(ModelAdmin):
     date_hierarchy = 'created_at'
 
 
-@admin.register(Comment)
+@register(Comment)
 class CommentAdmin(ModelAdmin):
     list_display = ('id', 'post', 'author', 'parent', 'created_at')
     search_fields = ('author__email', 'author__username', 'content')
     date_hierarchy = 'created_at'
 
 
-@admin.register(Tag)
+@register(Tag)
 class TagAdmin(ModelAdmin):
     list_display = ('id', 'name')
     search_fields = ('name',)
 
+@register(PostTag)
+class PostTagAdmin(ModelAdmin):
+    ...
+
+@register(Report)
+class ReportAdmin(ModelAdmin):
+    ...
 # Register your models here.
