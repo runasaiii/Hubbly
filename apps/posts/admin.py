@@ -4,8 +4,7 @@ from .models import (
     Post,
     Comment,
     Tag,
-    PostTag,
-    Report
+    Report,
 )
 
 #register Post App
@@ -28,11 +27,6 @@ class CommentAdmin(ModelAdmin):
 class TagAdmin(ModelAdmin):
     list_display = ('id', 'name')
     search_fields = ('name',)
-
-#register Post Tag App
-@register(PostTag)
-class PostTagAdmin(ModelAdmin):
-    ...
 
 #register Report App
 @register(Report)

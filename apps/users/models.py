@@ -1,12 +1,10 @@
 #Django modules
 from django.db import models
 import uuid
-
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 #App modules
-from django.contrib.auth.models import AbstractUser as Abs
 from apps.abstracts.models import AbstractBaseModule
-
-class User(Abs):
+class User(PermissionsMixin, AbstractBaseUser, AbstractBaseModule):
     """
     User model ith common fields.
     """
@@ -26,13 +24,12 @@ class User(Abs):
     is_active = models.BooleanField(
         default = True,
         )
-    created_at = models.DateTimeField(
-        auto_now_add = True,
-        )
     updated_at = models.DateTimeField(
         auto_now = True,
         )
-
+    is_staff = models.BooleanField(
+        default=False,
+    )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
@@ -83,9 +80,9 @@ class Media(AbstractBaseModule):
         editable=False,
     )
     owner = models.ForeignKey(
-        to=User,
+        'users.User',  # строковая ссылка
         on_delete=models.CASCADE,
-        related_name='media',
+        related_name='medias'  # теперь user.reports.all() вернёт все отчёты
     )
     media_type = models.CharField()
     def __str__(self):

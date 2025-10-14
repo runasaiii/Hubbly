@@ -3,7 +3,6 @@ from django.db import models
 import uuid
 
 #App modules
-from apps.users.models import User  
 from apps.communities.models import Community
 from apps.abstracts.models import AbstractBaseModule
 from apps.users.models import User
@@ -89,23 +88,6 @@ class Comment(AbstractBaseModule):
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.id}"
 
-class PostTag(models.Model):
-    """
-        Post Tag model ith common fields.
-    """
-    post_id = models.ForeignKey(
-        to=Post,
-        on_delete = models.CASCADE,
-        default = uuid.uuid4,
-    )
-    tag_id = models.ForeignKey(
-        to=Tag,
-        on_delete=models.CASCADE,
-        default = uuid.uuid4,
-    )
-    def __str__(self):
-        return f"Post Id: {self.post_id} Tag Id: {self.tag_id}"
-
 class Report(models.Model):
     """
     Report model ith common fields.
@@ -115,9 +97,9 @@ class Report(models.Model):
         default=uuid.uuid4,
     )
     reporter = models.ForeignKey(
-        to=User,
+        'users.User',  # строковая ссылка
         on_delete=models.CASCADE,
-        related_name='reports_made',
+        related_name='reports'  # теперь user.reports.all() вернёт все отчёты
     )
     reason = models.TextField()
     status = models.CharField()
