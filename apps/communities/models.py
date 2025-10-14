@@ -1,9 +1,15 @@
+#Django modules
 from django.db import models
 import uuid
+
+#App modules
 from apps.users.models import User
 from apps.abstracts.models import AbstractBaseModule
 
 class Community(AbstractBaseModule):
+    """
+        Community model ith common fields.
+    """
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('private', 'Private'),
@@ -31,6 +37,9 @@ class Community(AbstractBaseModule):
     
 
 class CommunityMembership(models.Model):
+    """
+          Community membership model ith common fields.
+    """
     ROLE_CHOICES = [
         ('member', 'Member'),
         ('moderator', 'Moderator'),

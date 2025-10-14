@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 
 # PATH
@@ -7,7 +8,8 @@ ROOT_URLCONF = 'settings.urls'
 WSGI_APPLICATION = 'settings.wsgi.application'
 ASGI_APPLICATION = 'settings.asgi.application'
 
-
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 # APPS
 DJANGO_AND_THIRD_PARTY_APPS = [
     'unfold',

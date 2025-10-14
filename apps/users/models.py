@@ -1,9 +1,15 @@
+#Django modules
 from django.db import models
-from django.contrib.auth.models import AbstractUser as Abs
 import uuid
+
+#App modules
+from django.contrib.auth.models import AbstractUser as Abs
 from apps.abstracts.models import AbstractBaseModule
 
 class User(Abs):
+    """
+    User model ith common fields.
+    """
     MAX_LENGTH = 150
     id = models.UUIDField(
         primary_key = True, 
@@ -35,6 +41,9 @@ class User(Abs):
     
 
 class Profile(models.Model):
+    """
+    Profile model ith common fields.
+    """
     MAX_LENGTH = 100
     user = models.OneToOneField(
         to = User,
@@ -65,6 +74,9 @@ class Profile(models.Model):
         return self.display_name or str(self.user.username)
 
 class Media(AbstractBaseModule):
+    """
+    Media model ith common fields.
+    """
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,

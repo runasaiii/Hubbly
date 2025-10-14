@@ -6,6 +6,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     #path('', include('apps.core.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
+    path('notification/', include('apps.notifications.urls')),
     path('users/', include('apps.users.urls')),
     path('posts/', include('apps.posts.urls')),
     path('events/', include('apps.events.urls')),

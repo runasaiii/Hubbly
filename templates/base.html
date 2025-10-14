@@ -15,6 +15,11 @@
     .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
     .muted { color: #475569; }
     footer { color: #475569; padding: 32px 0; text-align: center; }
+    .logo{
+    width: 40px;
+    height: 40px;
+    }
+    
   </style>
   {% block head %}{% endblock %}
   {% load static %}
@@ -22,6 +27,8 @@
 <body>
   <header>
     <div class="container nav">
+      {% load static %}
+      <img src="{% static 'img/IMG_4682.PNG' %}" class="logo" alt="Фото">
       <strong>Hubbly</strong>
       <a href="/">Home</a>
       <a href="/users/">Users</a>

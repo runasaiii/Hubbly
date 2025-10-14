@@ -2,7 +2,7 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import Community, CommunityMembership
 
-
+#register Community App
 @admin.register(Community)
 class CommunityAdmin(ModelAdmin):
     list_display = ('id', 'name', 'slug', 'visibility', 'owner', 'created_at')
@@ -10,7 +10,7 @@ class CommunityAdmin(ModelAdmin):
     search_fields = ('name', 'slug', 'owner__email', 'owner__username')
     prepopulated_fields = {'slug': ('name',)}
 
-
+#register Community Membership App
 @admin.register(CommunityMembership)
 class CommunityMembershipAdmin(ModelAdmin):
     list_display = ('id', 'user', 'community', 'role', 'status', 'joined_at')

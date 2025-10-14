@@ -1,10 +1,15 @@
+#Django modules
 from django.db import models
 import uuid
+#App modules
 from apps.users.models import User
 from apps.communities.models import Community
 
 
 class Event(models.Model):
+    """
+              Event model ith common fields.
+    """
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('published', 'Published'),
@@ -49,6 +54,9 @@ class Event(models.Model):
     
 
 class EventApplication(models.Model):
+    """
+     Event application model ith common fields.
+    """
     STATUS_CHOICES = [
         ('applied', 'Applied'),
         ('pending', 'Pending'),

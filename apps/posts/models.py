@@ -1,11 +1,17 @@
+#Django modules
 from django.db import models
 import uuid
+
+#App modules
 from apps.users.models import User  
 from apps.communities.models import Community
 from apps.abstracts.models import AbstractBaseModule
 from apps.users.models import User
 
 class Tag(models.Model):
+    """
+     Tag model ith common fields.
+    """
     MAX_LENGTH = 50
     id = models.UUIDField(
         primary_key = True, 
@@ -22,6 +28,9 @@ class Tag(models.Model):
 
 
 class Post(AbstractBaseModule):
+    """
+    Post model ith common fields.
+    """
     id = models.UUIDField(
         primary_key = True,
         default = uuid.uuid4,
@@ -52,6 +61,9 @@ class Post(AbstractBaseModule):
     
 
 class Comment(AbstractBaseModule):
+    """
+    Comment model ith common fields.
+    """
     id = models.UUIDField(
         primary_key = True,
         default = uuid.uuid4,
@@ -78,6 +90,9 @@ class Comment(AbstractBaseModule):
         return f"Comment by {self.author.username} on {self.post.id}"
 
 class PostTag(models.Model):
+    """
+        Post Tag model ith common fields.
+    """
     post_id = models.ForeignKey(
         to=Post,
         on_delete = models.CASCADE,
@@ -92,6 +107,9 @@ class PostTag(models.Model):
         return f"Post Id: {self.post_id} Tag Id: {self.tag_id}"
 
 class Report(models.Model):
+    """
+    Report model ith common fields.
+    """
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,

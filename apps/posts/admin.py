@@ -8,7 +8,7 @@ from .models import (
     Report
 )
 
-
+#register Post App
 @register(Post)
 class PostAdmin(ModelAdmin):
     list_display = ('id', 'author', 'community', 'pinned', 'created_at')
@@ -16,23 +16,25 @@ class PostAdmin(ModelAdmin):
     search_fields = ('author__email', 'author__username', 'content')
     date_hierarchy = 'created_at'
 
-
+#register Comment App
 @register(Comment)
 class CommentAdmin(ModelAdmin):
     list_display = ('id', 'post', 'author', 'parent', 'created_at')
     search_fields = ('author__email', 'author__username', 'content')
     date_hierarchy = 'created_at'
 
-
+#register Tag App
 @register(Tag)
 class TagAdmin(ModelAdmin):
     list_display = ('id', 'name')
     search_fields = ('name',)
 
+#register Post Tag App
 @register(PostTag)
 class PostTagAdmin(ModelAdmin):
     ...
 
+#register Report App
 @register(Report)
 class ReportAdmin(ModelAdmin):
     ...

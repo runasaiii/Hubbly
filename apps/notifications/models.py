@@ -1,11 +1,14 @@
 #Django models
 import uuid
-
 from django.db import models
+#App modules
 from apps.users.models import User
 from apps.abstracts.models import AbstractBaseModule
 
 class Notification(AbstractBaseModule):
+    """
+         Notification model ith common fields.
+    """
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
