@@ -1,11 +1,11 @@
 #Django modules
 from django.db import models
+from django.conf import settings
 import uuid
 
 #App modules
 from apps.communities.models import Community
-from apps.abstracts.models import AbstractBaseModule
-from apps.users.models import User
+from apps.abstracts.models import AbstractBaseModel
 
 class Tag(models.Model):
     """
@@ -26,7 +26,7 @@ class Tag(models.Model):
         return self.name
 
 
-class Post(AbstractBaseModule):
+class Post(AbstractBaseModel):
     """
     Post model ith common fields.
     """
@@ -36,7 +36,7 @@ class Post(AbstractBaseModule):
         editable = False
     )
     author = models.ForeignKey(
-        to = User, 
+        to = settings.AUTH_USER_MODEL, 
         on_delete = models.CASCADE, 
         related_name = 'posts'
     )
@@ -59,7 +59,7 @@ class Post(AbstractBaseModule):
         return f"Post by {self.author.username} at {self.created_at}"
     
 
-class Comment(AbstractBaseModule):
+class Comment(AbstractBaseModel):
     """
     Comment model ith common fields.
     """
@@ -74,7 +74,7 @@ class Comment(AbstractBaseModule):
         related_name = 'comments'
     )
     author = models.ForeignKey(
-        to = User, 
+        to = settings.AUTH_USER_MODEL, 
         on_delete = models.CASCADE
     )
     parent = models.ForeignKey(
@@ -95,16 +95,17 @@ class Report(models.Model):
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
+        editable=False
     )
     reporter = models.ForeignKey(
-        'users.User',  # строковая ссылка
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='reports'  # теперь user.reports.all() вернёт все отчёты
+        related_name='reports'
     )
     reason = models.TextField()
-    status = models.CharField()
+    status = models.CharField(max_length=50)
     handled_by = models.ForeignKey(
-        to=User,
+        to=settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

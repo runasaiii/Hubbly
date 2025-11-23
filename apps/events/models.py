@@ -1,8 +1,8 @@
 #Django modules
 from django.db import models
+from django.conf import settings
 import uuid
 #App modules
-from apps.users.models import User
 from apps.communities.models import Community
 
 
@@ -34,7 +34,7 @@ class Event(models.Model):
         default='draft'
     )
     organizer = models.ForeignKey(
-        to = User,
+        to = settings.AUTH_USER_MODEL,
         on_delete = models.CASCADE,
         related_name = 'events_organized'
     )
@@ -75,7 +75,7 @@ class EventApplication(models.Model):
         related_name = 'applications'
     )
     user = models.ForeignKey(
-        to = User,
+        to = settings.AUTH_USER_MODEL,
         on_delete = models.CASCADE,
     )
     status = models.CharField(
@@ -93,7 +93,7 @@ class EventApplication(models.Model):
         blank = True
     )
     reviewed_by = models.ForeignKey(
-        to = User,
+        to = settings.AUTH_USER_MODEL,
         on_delete = models.SET_NULL,
         null=True,
         blank=True,
@@ -104,4 +104,4 @@ class EventApplication(models.Model):
         unique_together = ('event', 'user')
 
     def __str__(self):
-        return f"Application of {self.applicant.username} for {self.event.title}"
+        return f"Application of {self.user.username} for {self.event.title}"

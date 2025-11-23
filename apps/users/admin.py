@@ -1,9 +1,9 @@
 from django.contrib.admin import register
 from unfold.admin import ModelAdmin
-from .models import User, Profile, Media
+from .models import CustomUser, Profile, Media
 
 # register User Admin App
-@register(User)
+@register(CustomUser)
 class UserAdmin(ModelAdmin):
     list_display = ('id', 'email', 'username', 'is_active', 'created_at')
     list_filter = ('is_active',)

@@ -20,7 +20,13 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 PROJECT_APPS = [
     "apps.users.apps.UsersConfig",
     "apps.posts.apps.PostsConfig",
@@ -87,4 +93,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SECRET_KEY = 'django-insecure-&@g*01o-j&nd)i_b2#ut#$2c+obrtpw1$lny!$97k3q($itwxi'
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'users.CustomUser'

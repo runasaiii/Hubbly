@@ -1,11 +1,25 @@
-from rest_framework import serializers
-from .models import User, Profile
+# Python modules
+from rest_framework.serializers import (
+    Serializer,
+    CharField,
+    EmailField,
+    IntegerField,
+    ListField,
+    ModelSerializer
+)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+# Django modules
+from django.contrib.auth.password_validation import validate_password
+
+# Project modules
+from .models import CustomUser, Profile
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(ModelSerializer):
     """Serializer for user model"""
     class Meta:
-        model = User
+        model = CustomUser
         fields = [
             'id',
             'username', 
@@ -17,28 +31,34 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(ModelSerializer):
     """Serializer for creating new users"""
     class Meta:
-        model = User
+        model = CustomUser
         fields = [
             'username',
-            'email', 
+            'email',
+            'full_name',
             'password'
         ]
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'full_name': {'required': False, 'allow_blank': True}
         }
     
     def create(self, validated_data):
         password = validated_data.pop('password')
-        user = User.objects.create_user(**validated_data)
-        user.set_password(password)
-        user.save()
+        # Provide default full_name if not provided
+        if 'full_name' not in validated_data or not validated_data.get('full_name'):
+            validated_data['full_name'] = validated_data.get('username', '')
+        user = CustomUser.objects.create_user(
+            password=password,
+            **validated_data
+        )
         return user
 
 
-class ProfileSerializer(serializers.ModelSerializer):
+class ProfileSerializer(ModelSerializer):
     """Serializer for profile model"""
     class Meta:
         model = Profile
@@ -55,12 +75,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user']
 
 
-class UserWithProfileSerializer(serializers.ModelSerializer):
+class UserWithProfileSerializer(ModelSerializer):
     """Serializer for user model with nested profile"""
     profile = ProfileSerializer(read_only=True)
     
     class Meta:
-        model = User
+        model = CustomUser
         fields = [
             'id',
             'username',
@@ -73,7 +93,7 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
-class ProfileUpdateSerializer(serializers.ModelSerializer):
+class ProfileUpdateSerializer(ModelSerializer):
     """Serializer for updating profile information"""
     class Meta:
         model = Profile
@@ -84,3 +104,33 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'interests', 
             'avatar'
         ]
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom serializer to include user data in JWT token response"""
+    
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        token['username'] = user.username
+        token['full_name'] = user.full_name
+        token['email'] = user.email
+        return token
+    
+
+class RegistrationSerializer(Serializer):
+    """Serializer for user registration"""
+
+    password = CharField(write_only=True, min_length=8, validators=[validate_password])
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'username',
+            'email',
+            'full_name',
+            'password'
+        ]
+
+    def create(self, validated_data):
+        return CustomUser.objects.create_user(**validated_data)

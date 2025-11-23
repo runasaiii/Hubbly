@@ -10,7 +10,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = [
             'id',
-            'user_id',
+            'user',
         ]
         read_only_fields = ['id']
 

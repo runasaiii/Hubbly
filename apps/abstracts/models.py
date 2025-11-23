@@ -1,13 +1,32 @@
+#Python modules
+from typing import Any
+
 #Django modules
 from django.db.models import Model, DateTimeField
+from django.utils import timezone as django_timezone
 
-class AbstractBaseModule(Model):
+class AbstractBaseModel(Model):
     """
     Abstract base model ith common fields.
     """
     created_at = DateTimeField(
         auto_now_add=True
     )
+    updated_at = DateTimeField(
+        auto_now=True
+    )
+    deleted_at = DateTimeField(
+        null=True,
+        blank=True
+    )
 
     class Meta:
+        """Abstract base model meta options."""
         abstract = True
+    
+    def delete(self, *args: tuple[Any, ...], **kwargs: dict[Any, Any]) -> None:
+        """
+        Soft delete the model instance by setting the deleted_at field.
+        """
+        self.deleted_at = django_timezone.now()
+        self.save(update_fields=['deleted_at'])

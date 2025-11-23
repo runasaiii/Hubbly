@@ -1,11 +1,11 @@
 #Django models
 import uuid
 from django.db import models
+from django.conf import settings
 #App modules
-from apps.users.models import User
-from apps.abstracts.models import AbstractBaseModule
+from apps.abstracts.models import AbstractBaseModel
 
-class Notification(AbstractBaseModule):
+class Notification(AbstractBaseModel):
     """
          Notification model ith common fields.
     """
@@ -14,9 +14,9 @@ class Notification(AbstractBaseModule):
         default=uuid.uuid4,
         editable=False
     )
-    user_id = models.ForeignKey(
-        to = User,
+    user = models.ForeignKey(
+        to = settings.AUTH_USER_MODEL,
         on_delete = models.CASCADE,
-        related_name = 'userid'
+        related_name = 'notifications'
     )
 

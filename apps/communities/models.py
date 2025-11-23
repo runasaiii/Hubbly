@@ -1,12 +1,12 @@
 #Django modules
 from django.db import models
+from django.conf import settings
 import uuid
 
 #App modules
-from apps.users.models import User
-from apps.abstracts.models import AbstractBaseModule
+from apps.abstracts.models import AbstractBaseModel
 
-class Community(AbstractBaseModule):
+class Community(AbstractBaseModel):
     """
         Community model ith common fields.
     """
@@ -30,7 +30,7 @@ class Community(AbstractBaseModule):
         choices=VISIBILITY_CHOICES, 
         default='public'
     )
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_communities')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_communities')
 
     def __str__(self):
         return self.name
@@ -58,7 +58,7 @@ class CommunityMembership(models.Model):
         editable=False
     )
     user = models.ForeignKey(
-        to = User, 
+        to = settings.AUTH_USER_MODEL, 
         on_delete = models.CASCADE, 
         related_name = 'community_memberships'
     )
