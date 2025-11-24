@@ -34,6 +34,7 @@ class CustomUserManager(BaseUserManager):
             email: str,
             full_name: str,
             username: str,
+            password: str,
             **kwargs: dict[str, Any],
     ) -> 'CustomUser':
         """Get user instance"""
@@ -69,6 +70,7 @@ class CustomUserManager(BaseUserManager):
         new_user: 'CustomUser' = self.__obtain_user_instance(
             email=self.normalize_email(email),
             username=username,
+            password=password,
             full_name=full_name,
             **kwargs,
         )
@@ -89,6 +91,7 @@ class CustomUserManager(BaseUserManager):
             email=self.normalize_email(email),
             username=username,
             full_name=full_name,
+            password=password,
             is_staff=True,
             is_superuser=True,
             **kwargs,

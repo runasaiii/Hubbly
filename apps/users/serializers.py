@@ -1,4 +1,6 @@
-# Python modules
+# Django Rest modules
+from typing import Any, Optional
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     Serializer,
     CharField,
@@ -48,6 +50,7 @@ class UserCreateSerializer(ModelSerializer):
     
     def create(self, validated_data):
         password = validated_data.pop('password')
+
         # Provide default full_name if not provided
         if 'full_name' not in validated_data or not validated_data.get('full_name'):
             validated_data['full_name'] = validated_data.get('username', '')
@@ -105,6 +108,7 @@ class ProfileUpdateSerializer(ModelSerializer):
             'avatar'
         ]
 
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom serializer to include user data in JWT token response"""
     
@@ -121,7 +125,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class RegistrationSerializer(Serializer):
     """Serializer for user registration"""
 
-    password = CharField(write_only=True, min_length=8, validators=[validate_password])
+    password = CharField(
+        write_only=True,
+        min_length=8,
+        validators=[validate_password]
+    )
 
     class Meta:
         model = CustomUser
@@ -134,3 +142,49 @@ class RegistrationSerializer(Serializer):
 
     def create(self, validated_data):
         return CustomUser.objects.create_user(**validated_data)
+
+
+# Saya's code for Login
+class UserLoginSerializer(Serializer):
+    """ Serializer for user login. """
+    email = EmailField(
+        required=True,
+        max_length=CustomUser.EMAIL_MAX_LENGTH,
+    )
+    password = CharField(
+        required=True,
+        min_length=CustomUser.PASSWORD_MIN_LENGTH,
+    )
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = {
+            'email',
+            'password',
+        }
+
+    def validate_email(self, value: str,) -> str:
+        """ Validates the email field """
+        return value.lower()
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """ Validates the input data """
+        email: str = attrs['email']
+        password: str = attrs['password']
+
+        user: Optional[CustomUser] = CustomUser.objects.filter(email=email).first()
+
+        if not user:
+            raise ValidationError(
+                detail={
+                    'email': [f'User with that email {email} does not exists']
+                }
+            )
+        if not user.check_password(raw_password=password):
+            raise ValidationError(
+                detail={
+                    'password': ['Incorrect password']
+                }
+            )
+        attrs['user'] = user
+        return super().validate(attrs)

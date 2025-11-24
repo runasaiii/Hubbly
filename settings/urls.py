@@ -18,7 +18,9 @@ urlpatterns = [
     #path('', include('apps.core.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('notification/', include('apps.notifications.urls')),
+    # User's urls
     path('users/', include('apps.users.urls')),
+    # Posts' urls
     path('posts/', include('apps.posts.urls')),
     path('events/', include('apps.events.urls')),
     path('communities/', include('apps.communities.urls')),

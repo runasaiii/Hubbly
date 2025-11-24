@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-
+from decouple import config
 
 # PATH
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -91,6 +91,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-SECRET_KEY = 'django-insecure-&@g*01o-j&nd)i_b2#ut#$2c+obrtpw1$lny!$97k3q($itwxi'
+SECRET_KEY = config('HUBBLY_SECRET_KEY')
 
 AUTH_USER_MODEL = 'users.CustomUser'
