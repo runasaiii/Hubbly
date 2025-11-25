@@ -86,7 +86,7 @@ class CustomUserManager(BaseUserManager):
             password: str,
             **kwargs: dict[str, Any],
     ) -> 'CustomUser':
-        """Create super User"""
+        """Create Super User"""
         new_user: 'CustomUser' = self.__obtain_user_instance(
             email=self.normalize_email(email),
             username=username,

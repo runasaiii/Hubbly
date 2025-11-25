@@ -82,10 +82,11 @@ class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
 
 
-# Saya's code for Login Endpoints
+# Saya's code for Endpoints
 class CustomUserViewSet(ViewSet):
     """ Creating Login Endpoints for CustomUser"""
 
+    # First Endpoint
     @action(
         methods=('POST',),
         detail=False,
@@ -100,21 +101,7 @@ class CustomUserViewSet(ViewSet):
             **kwargs: dict[str, Any],
 
     ) -> DRFResponse:
-        """
-                Handle user login.
 
-                Parameters:
-                    request: DRFRequest
-                        The request object.
-                    *args: tuple
-                        Additional positional arguments.
-                    **kwargs: dict
-                        Additional keyword arguments.
-
-                Returns:
-                    DRFResponse
-                        Response containing user data or error message.
-        """
         serializer: UserLoginSerializer = UserLoginSerializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
@@ -134,3 +121,45 @@ class CustomUserViewSet(ViewSet):
             },
             status=HTTP_200_OK
         )
+
+
+    """ Creating Register Endpoints for CustomUser"""
+    # Second Endpoint
+    @action(
+        methods=('POST',),
+        detail=False,
+        url_path='register',
+        url_name='register',
+        permission_classes = (AllowAny,)
+    )
+    def register(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+
+        serializer: RegistrationSerializer = RegistrationSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        user: CustomUser = serializer.save()
+
+        refresh_token: RefreshToken = RefreshToken.for_user(user)
+        access_token: str = str(refresh_token.access_token)
+
+        return DRFResponse(
+            data={
+                'id': user.id,
+                'email': user.email,
+                'access': access_token,
+                'refresh': str(refresh_token),
+            },
+            status=HTTP_200_OK
+        )
+
+
+
+
+
+

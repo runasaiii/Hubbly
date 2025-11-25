@@ -126,17 +126,30 @@ class RegistrationSerializer(Serializer):
     """Serializer for user registration"""
 
     password = CharField(
+        required=True,
         write_only=True,
-        min_length=8,
+        min_length=CustomUser.PASSWORD_MIN_LENGTH,
         validators=[validate_password]
     )
-
+    email = EmailField(
+        required=True,
+        max_length=CustomUser.EMAIL_MAX_LENGTH,
+    )
+    username = CharField(
+        required=True,
+        max_length=CustomUser.USERNAME_MAX_LENGTH,
+    )
+    full_name = CharField(
+        required=True,
+        max_length=CustomUser.FULL_NAME_MAX_LENGTH,
+    )
     class Meta:
         model = CustomUser
         fields = [
+            'id',
+            'full_name',
             'username',
             'email',
-            'full_name',
             'password'
         ]
 
