@@ -84,9 +84,9 @@ class RegistrationView(generics.CreateAPIView):
 
 # Saya's code for Endpoints
 class CustomUserViewSet(ViewSet):
-    """ Creating Login Endpoints for CustomUser"""
 
-    # First Endpoint
+    """ Creating Login Endpoints for CustomUser"""
+    # FIRST ENDPOINT
     @action(
         methods=('POST',),
         detail=False,
@@ -124,7 +124,7 @@ class CustomUserViewSet(ViewSet):
 
 
     """ Creating Register Endpoints for CustomUser"""
-    # Second Endpoint
+    # SECOND ENDPOINT
     @action(
         methods=('POST',),
         detail=False,
@@ -154,6 +154,33 @@ class CustomUserViewSet(ViewSet):
                 'email': user.email,
                 'access': access_token,
                 'refresh': str(refresh_token),
+            },
+            status=HTTP_200_OK
+        )
+
+    """ Creating Personal Account Endpoint """
+    # THIRD ENDPOINT
+    @action(
+        methods=('GET',),
+        detail=False,
+        url_path='personal_data',
+        url_name='personal_data',
+        permission_classes = (IsAuthenticated,),
+    )
+    def display_personal_data(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+
+        user: CustomUser = request.user
+
+        return DRFResponse(
+            data={
+                'id': user.id,
+                'email': user.email,
+                'password': user.password,
             },
             status=HTTP_200_OK
         )

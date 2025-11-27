@@ -121,9 +121,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         return token
     
-
+"""Serializer for user registration"""
 class RegistrationSerializer(Serializer):
-    """Serializer for user registration"""
 
     password = CharField(
         required=True,
@@ -155,7 +154,6 @@ class RegistrationSerializer(Serializer):
 
     def create(self, validated_data):
         return CustomUser.objects.create_user(**validated_data)
-
 
 # Saya's code for Login
 class UserLoginSerializer(Serializer):
