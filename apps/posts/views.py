@@ -116,11 +116,11 @@ class PostViewSet(ViewSet):
         """ Creating PATCH request"""
 
         try:
-            post: Post = Post.objects.get(id=kwargs['id'])
+            post: Post = Post.objects.get(pk=kwargs['pk'])
         except Post.DoesNotExist:
             return DRFResponse(
                 data={
-                    'pk': [f'Post with that id={kwargs['pk']} does not exists']
+                    'pk': [f"Post with that id={kwargs['pk']} does not exists"]
                 },
                 status=HTTP_404_NOT_FOUND
             )
@@ -154,7 +154,7 @@ class PostViewSet(ViewSet):
         except Post.DoesNotExist:
             return DRFResponse(
                 data={
-                    'pk': [f'Post with that id={kwargs['pk']} does not exists']
+                    f"Post with that id={kwargs['pk']} does not exists"
                 },
                 status=HTTP_404_NOT_FOUND
             )

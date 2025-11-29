@@ -121,7 +121,7 @@ class EventViewSet(ViewSet):
         except Event.DoesNotExist:
             return DRFResponse(
                 data={
-                    'pk': [f'Event with id={kwargs['pk']} do not exists.']
+                    f"Event with that id={kwargs['pk']} does not exists"
                 },
                 status=HTTP_404_NOT_FOUND
             )
@@ -155,7 +155,7 @@ class EventViewSet(ViewSet):
         except Event.DoesNotExist:
             return DRFResponse(
                 data={
-                    'pk': [f'Event with id={kwargs['pk']} do not exists.']
+                    'pk': [f'Event with pk={kwargs["pk"]} does not exist.']
                 },
                 status=HTTP_404_NOT_FOUND
             )
