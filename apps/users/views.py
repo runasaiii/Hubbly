@@ -158,6 +158,8 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
+    # ...existing code...
+
     """ Creating Personal Account Endpoint """
     # THIRD ENDPOINT
     @action(
