@@ -26,11 +26,21 @@ class UserSerializer(ModelSerializer):
             'id',
             'username', 
             'email',
+            'full_name',
+            'first_name',
+            'last_name',
+            'phone_number',
+            'city',
+            'country',
+            'birthdate',
             'is_active',
+            'is_staff',
+            'date_joined',
+            'last_login',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'date_joined', 'last_login']
 
 
 class UserCreateSerializer(ModelSerializer):
@@ -73,9 +83,11 @@ class ProfileSerializer(ModelSerializer):
             'location', 
             'interests',
             'is_verified',
-            'avatar'
+            'avatar',
+            'gender',
+            'updated_at'
         ]
-        read_only_fields = ['id', 'user']
+        read_only_fields = ['id', 'user', 'updated_at']
 
 
 class UserWithProfileSerializer(ModelSerializer):
@@ -87,13 +99,23 @@ class UserWithProfileSerializer(ModelSerializer):
         fields = [
             'id',
             'username',
-            'email', 
+            'email',
+            'full_name',
+            'first_name',
+            'last_name',
+            'phone_number',
+            'city',
+            'country',
+            'birthdate',
             'is_active',
+            'is_staff',
+            'date_joined',
+            'last_login',
             'created_at',
             'updated_at',
             'profile'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'date_joined', 'last_login']
 
 
 class ProfileUpdateSerializer(ModelSerializer):
@@ -105,7 +127,8 @@ class ProfileUpdateSerializer(ModelSerializer):
             'bio',
             'location',
             'interests', 
-            'avatar'
+            'avatar',
+            'gender'
         ]
 
 

@@ -21,6 +21,7 @@ export interface User extends BaseModel {
   is_staff: boolean;
   date_joined: string;
   last_login?: string;
+  profile?: Profile;
 }
 
 export interface Profile {
@@ -98,6 +99,9 @@ export interface CreateCommentRequest {
 
 // Community types
 export interface Community extends BaseModel {
+  posts_count: number;
+  members_count: number;
+  category: any;
   name: string;
   slug: string;
   description?: string;
@@ -125,6 +129,7 @@ export interface CreateCommunityRequest {
 
 // Event types
 export interface Event {
+  location: any;
   id: string;
   title: string;
   description: string;

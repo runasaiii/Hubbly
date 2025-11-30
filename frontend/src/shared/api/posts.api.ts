@@ -17,6 +17,9 @@ export const postsApi = {
   delete: (id: string): Promise<void> =>
     apiClient.delete(`/posts/api/${id}/`),
 
+  getUserPosts: (userId: string): Promise<Post[]> =>
+    apiClient.get(`/posts/v1/user/${userId}`),
+
   getComments: (postId: string): Promise<Comment[]> =>
     apiClient.get(`/posts/api/${postId}/comments/`).catch(() => []),
 

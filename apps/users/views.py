@@ -8,7 +8,7 @@ from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 
@@ -19,12 +19,15 @@ from django.views.generic import ListView, DetailView
 
 
 # Project modules
-from .models import CustomUser
+from .models import CustomUser, Profile
 from .serializers import (
     UserSerializer,
     CustomTokenObtainPairSerializer,
     RegistrationSerializer,
     UserLoginSerializer,
+    UserWithProfileSerializer,
+    ProfileSerializer,
+    ProfileUpdateSerializer,
 )
 
 
@@ -92,7 +95,7 @@ class CustomUserViewSet(ViewSet):
         detail=False,
         url_path='login',
         url_name='login',
-        permission_classes = (AllowAny,)
+        permission_classes=(AllowAny,)
     )
     def login(
             self,
@@ -108,7 +111,7 @@ class CustomUserViewSet(ViewSet):
 
         user: CustomUser = serializer.validated_data.pop("user")
 
-        #Generate User's tokens
+        # Generate User's tokens
         refresh_token: RefreshToken = RefreshToken.for_user(user)
         access_token: str = str(refresh_token.access_token)
 
@@ -122,7 +125,6 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-
     """ Creating Register Endpoints for CustomUser"""
     # SECOND ENDPOINT
     @action(
@@ -130,7 +132,7 @@ class CustomUserViewSet(ViewSet):
         detail=False,
         url_path='register',
         url_name='register',
-        permission_classes = (AllowAny,)
+        permission_classes=(AllowAny,)
     )
     def register(
             self,
@@ -158,8 +160,6 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    # ...existing code...
-
     """ Creating Personal Account Endpoint """
     # THIRD ENDPOINT
     @action(
@@ -167,7 +167,7 @@ class CustomUserViewSet(ViewSet):
         detail=False,
         url_path='personal_data',
         url_name='personal_data',
-        permission_classes = (IsAuthenticated,),
+        permission_classes=(IsAuthenticated,),
     )
     def display_personal_data(
             self,
@@ -177,18 +177,121 @@ class CustomUserViewSet(ViewSet):
     ) -> DRFResponse:
 
         user: CustomUser = request.user
-
+        serializer = UserWithProfileSerializer(user)
         return DRFResponse(
-            data={
-                'id': user.id,
-                'email': user.email,
-                'password': user.password,
-            },
+            data=serializer.data,
             status=HTTP_200_OK
         )
 
+    """ Creating Profile Endpoints """
+    # FOURTH ENDPOINT - Get and Update Profile (Combined)
+    @action(
+        methods=('GET', 'PATCH'),
+        detail=False,
+        url_path='profile',
+        url_name='profile',
+        permission_classes=(IsAuthenticated,),
+    )
+    def profile(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        user: CustomUser = request.user
+        profile, created = Profile.objects.get_or_create(user=user)
 
+        # GET request - return profile
+        if request.method == 'GET':
+            serializer = ProfileSerializer(profile)
+            return DRFResponse(
+                data=serializer.data,
+                status=HTTP_200_OK
+            )
 
+        # PATCH request - update profile
+        elif request.method == 'PATCH':
+            data = request.data.copy()
 
+            # Преобразуем interests из JSON string в list, если нужно
+            if 'interests' in data and isinstance(data['interests'], str):
+                import json
+                try:
+                    data['interests'] = json.loads(data['interests'])
+                except json.JSONDecodeError:
+                    data['interests'] = []
 
+            # Если есть avatar, сразу сохраняем
+            if 'avatar' in request.FILES:
+                profile.avatar = request.FILES['avatar']
 
+            serializer = ProfileUpdateSerializer(profile, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            return DRFResponse(ProfileSerializer(profile).data, status=HTTP_200_OK)
+
+    # FIFTH ENDPOINT - Upload Avatar
+    @action(
+        methods=('POST',),
+        detail=False,
+        url_path='profile/avatar',
+        url_name='upload_avatar',
+        permission_classes=(IsAuthenticated,),
+    )
+    def upload_avatar(self, request: DRFRequest, *args, **kwargs) -> DRFResponse:
+        user: CustomUser = request.user
+        profile, created = Profile.objects.get_or_create(user=user)
+
+        if 'avatar' not in request.FILES:
+            return DRFResponse(
+                data={'error': 'No file provided'},
+                status=400
+            )
+
+        profile.avatar = request.FILES['avatar']
+        profile.save()
+
+        serializer = ProfileSerializer(profile)
+        return DRFResponse(
+            data=serializer.data,
+            status=200
+        )
+
+    # SIXTH ENDPOINT - Get User Profile by ID
+    @action(
+        methods=('GET',),
+        detail=True,
+        url_path='profile',
+        url_name='user_profile',
+        permission_classes=(IsAuthenticated,),
+    )
+    def get_user_profile(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Get profile of a specific user by user ID"""
+        user_id = kwargs.get('pk')
+        try:
+            target_user = CustomUser.objects.get(pk=user_id)
+        except CustomUser.DoesNotExist:
+            return DRFResponse(
+                data={'error': 'User not found'},
+                status=404
+            )
+
+        profile, created = Profile.objects.get_or_create(user=target_user)
+        serializer = ProfileSerializer(profile)
+
+        # Also return user data
+        user_serializer = UserSerializer(target_user)
+
+        return DRFResponse(
+            data={
+                'user': user_serializer.data,
+                'profile': serializer.data
+            },
+            status=HTTP_200_OK
+        )

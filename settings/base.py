@@ -22,6 +22,7 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'debug_toolbar',
+    "corsheaders",
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -41,7 +42,7 @@ INSTALLED_APPS = DJANGO_AND_THIRD_PARTY_APPS + PROJECT_APPS
 
 # MIDDLEWARE/TEMPLATES/VALIDATORS
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -91,6 +92,8 @@ USE_TZ = True
 
 # STATIC/MEDIA
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -99,10 +102,16 @@ SECRET_KEY = config('HUBBLY_SECRET_KEY')
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
 
 
