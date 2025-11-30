@@ -1,4 +1,7 @@
+# Python modules
 from rest_framework import serializers
+
+# Project modules
 from .models import Post, Comment, Tag
 
 
@@ -43,6 +46,6 @@ class PostSerializer(serializers.ModelSerializer):
             'tags',
             'created_at',
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'author']
 
 
