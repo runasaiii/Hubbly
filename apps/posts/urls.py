@@ -1,12 +1,16 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import (
     PostListView, 
     PostDetailView,
     PostPageListView, 
     PostPageDetailView,
     PostCreateView,
+    PostViewSet,
 )
 
+router = DefaultRouter(trailing_slash=False)
+router.register(prefix='v1', viewset=PostViewSet, basename='post')
 
 urlpatterns = [
     # HTML pages (default)
@@ -23,4 +27,5 @@ urlpatterns = [
     # REST API
     path('api/', PostListView.as_view(), name='post-list'),
     path('api/<uuid:pk>/', PostDetailView.as_view(), name='post-detail'),
+    path('', include(router.urls)),
 ]

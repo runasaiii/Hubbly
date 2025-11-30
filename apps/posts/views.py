@@ -11,6 +11,7 @@ from django.views.generic import CreateView
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_204_NO_CONTENT
@@ -180,4 +181,36 @@ class PostViewSet(ViewSet):
 
         return DRFResponse(
             status=HTTP_204_NO_CONTENT
+        )
+
+    @action(
+        methods=('GET',),
+        detail=False,
+        url_path='user/(?P<user_id>[^/.]+)',
+        url_name='user_posts',
+        permission_classes = (IsAuthenticated,),
+    )
+    def get_user_posts(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Get posts by specific user"""
+        user_id = kwargs.get('user_id')
+        try:
+            from apps.users.models import CustomUser
+            target_user = CustomUser.objects.get(pk=user_id)
+        except CustomUser.DoesNotExist:
+            return DRFResponse(
+                data={'error': 'User not found'},
+                status=HTTP_404_NOT_FOUND
+            )
+        
+        user_posts = Post.objects.filter(author=target_user).order_by('-created_at')
+        serializer = PostSerializer(user_posts, many=True)
+        
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK
         )

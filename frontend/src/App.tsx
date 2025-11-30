@@ -40,6 +40,7 @@ function App() {
             <Route path="events" element={<EventsListPage />} />
             <Route path="events/:id" element={<EventDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="profile/:userId" element={<ProfilePage />} />
             <Route path="notifications" element={<NotificationsPage />} />
           </Route>
 
