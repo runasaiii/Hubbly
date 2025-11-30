@@ -1,8 +1,13 @@
+# Python Modules
+from typing import Any
+
 # Django Modules
 from django.views.generic import ListView, DetailView
 from django.db.models import QuerySet, Count
+from django.shortcuts import redirect
 
 # Django Rest Framework Modules
+from django.views.generic import CreateView
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated
@@ -10,13 +15,21 @@ from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_204_NO_CONTENT
 
-
 # Project Modules
 from .models import Post
 from .serializers import PostSerializer
+from .models import Post
 
-# Python Modules
-from typing import Any
+
+class PostCreateView(CreateView):
+    model = Post
+    fields = ['community', 'content', 'pinned', 'tags']
+    template_name = 'posts/post_create.html'
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        post = form.save()
+        return redirect('post-page-detail', pk=post.pk)
 
 
 class PostListView(generics.ListCreateAPIView):
@@ -25,6 +38,10 @@ class PostListView(generics.ListCreateAPIView):
     """
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -107,7 +124,7 @@ class PostViewSet(ViewSet):
         )
 
 
-    def partial_updateself(
+    def partial_update(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
