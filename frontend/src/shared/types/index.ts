@@ -72,6 +72,7 @@ export interface Post extends BaseModel {
   author_username: string;
   community?: string;
   community_slug?: string;
+  community_name?: string;
   content: string;
   pinned: boolean;
   tags: Tag[];
@@ -110,6 +111,10 @@ export interface Community extends BaseModel {
   visibility: 'public' | 'private' | 'secret';
   owner: string;
   owner_username: string;
+  is_owner?: boolean;
+  is_member?: boolean;
+  membership_role?: 'member' | 'moderator' | 'organizer' | null;
+  membership_status?: 'pending' | 'active' | 'banned' | null;
 }
 
 export interface CommunityMembership {

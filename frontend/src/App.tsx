@@ -10,6 +10,7 @@ import { PostDetailPage } from './features/posts/pages/PostDetailPage';
 import { CreatePostPage } from './features/posts/pages/CreatePostPage';
 import { CommunitiesListPage } from './features/communities/pages/CommunitiesListPage';
 import { CommunityDetailPage } from './features/communities/pages/CommunityDetailPage';
+import { CreateCommunityPage } from './features/communities/pages/CreateCommunityPage';
 import { EventsListPage } from './features/events/pages/EventsListPage';
 import { EventDetailPage } from './features/events/pages/EventDetailPage';
 import { ProfilePage } from './features/users/pages/ProfilePage';
@@ -36,6 +37,7 @@ function App() {
             <Route path="posts/create" element={<CreatePostPage />} />
             <Route path="posts/:id" element={<PostDetailPage />} />
             <Route path="communities" element={<CommunitiesListPage />} />
+            <Route path="communities/create" element={<CreateCommunityPage />} />
             <Route path="communities/:id" element={<CommunityDetailPage />} />
             <Route path="events" element={<EventsListPage />} />
             <Route path="events/:id" element={<EventDetailPage />} />

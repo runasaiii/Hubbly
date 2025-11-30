@@ -94,9 +94,11 @@ export const CommunitiesListPage = () => {
               <Search className="h-4 w-4" />
               Поиск
             </Button>
-            <Button size="sm" variant="secondary" className="gap-2 shadow-lg">
-              <Plus className="h-5 w-5" />
-              Создать
+            <Button size="sm" variant="secondary" className="gap-2 shadow-lg" asChild>
+              <Link to="/communities/create">
+                <Plus className="h-5 w-5" />
+                Создать
+              </Link>
             </Button>
           </div>
         </div>
@@ -158,9 +160,11 @@ export const CommunitiesListPage = () => {
             <p className="text-muted-foreground mb-6">
               Создайте первое сообщество и начните объединять людей!
             </p>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Создать сообщество
+            <Button className="gap-2" asChild>
+              <Link to="/communities/create">
+                <Plus className="h-4 w-4" />
+                Создать сообщество
+              </Link>
             </Button>
           </CardContent>
         </Card>

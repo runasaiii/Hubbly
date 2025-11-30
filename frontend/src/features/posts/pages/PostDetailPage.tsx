@@ -7,7 +7,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { formatDate } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useState } from 'react';
-import { ArrowLeft, Trash2, Clock, MessageSquare, Heart, Send } from 'lucide-react';
+import { ArrowLeft, Trash2, Clock, MessageSquare, Heart, Send, Users } from 'lucide-react';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,8 +60,8 @@ export const PostDetailPage = () => {
   });
 
   const handleLike = () => {
-    if (!user || !token) return;
-    
+    if (!user || !token || !post) return;
+
     if (post.is_liked) {
       unlikeMutation.mutate();
     } else {
@@ -129,26 +129,64 @@ export const PostDetailPage = () => {
       <Card className="border-none shadow-xl overflow-hidden">
         <CardHeader className="border-b bg-gradient-to-r from-muted/30 to-transparent pb-6">
           <div className="flex items-start justify-between gap-4">
-            <Link 
-              to={`/profile/${post.author}`}
-              className="flex items-center gap-4 hover:opacity-80 transition-opacity group"
-            >
-              <div className="relative">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xl font-bold text-white shadow-lg">
-                  {post.author_username?.[0]?.toUpperCase() || 'U'}
+            {post.community ? (
+              <Link 
+                to={`/communities/${post.community}`}
+                className="flex items-center gap-4 hover:opacity-80 transition-opacity group"
+              >
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+                    {post.community_name?.[0]?.toUpperCase() || 'C'}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <Users className="h-3 w-3 text-white" />
+                  </div>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
-              </div>
-              <div>
-                <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                  {post.author_username}
-                </CardTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{formatDate(post.created_at)}</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                      {post.community_name}
+                    </CardTitle>
+                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                      Сообщество
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDate(post.created_at)}</span>
+                    <span className="text-xs">•</span>
+                    <Link 
+                      to={`/profile/${post.author}`}
+                      className="text-xs hover:text-primary transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      от {post.author_username}
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            ) : (
+              <Link 
+                to={`/profile/${post.author}`}
+                className="flex items-center gap-4 hover:opacity-80 transition-opacity group"
+              >
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+                    {post.author_username?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div>
+                  <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                    {post.author_username}
+                  </CardTitle>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDate(post.created_at)}</span>
+                  </div>
+                </div>
+              </Link>
+            )}
             
             {isAuthor && (
               <Button variant="destructive" size="sm" className="gap-2">

@@ -29,7 +29,14 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     author_username = serializers.ReadOnlyField(source='author.username')
     community_slug = serializers.SerializerMethodField()
+    community_name = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
+    tags_list = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        write_only=True,
+        required=False,
+        allow_empty=True
+    )
     comments_count = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
@@ -42,9 +49,11 @@ class PostSerializer(serializers.ModelSerializer):
             'author_username',
             'community',
             'community_slug',
+            'community_name',
             'content',
             'pinned',
             'tags',
+            'tags_list',
             'created_at',
             'comments_count',
             'likes_count',
@@ -55,6 +64,11 @@ class PostSerializer(serializers.ModelSerializer):
     def get_community_slug(self, obj):
         if obj.community:
             return obj.community.slug
+        return None
+
+    def get_community_name(self, obj):
+        if obj.community:
+            return obj.community.name
         return None
 
     def get_comments_count(self, obj):
@@ -68,4 +82,36 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(user=request.user).exists()
         return False
+
+    def create(self, validated_data):
+        tags_list = validated_data.pop('tags_list', [])
+        post = super().create(validated_data)
+        
+        # Обработка тегов
+        if tags_list:
+            tag_objects = []
+            for tag_name in tags_list:
+                tag_name = tag_name.strip().lower()
+                if tag_name:
+                    tag, created = Tag.objects.get_or_create(name=tag_name)
+                    tag_objects.append(tag)
+            post.tags.set(tag_objects)
+        
+        return post
+
+    def update(self, instance, validated_data):
+        tags_list = validated_data.pop('tags_list', None)
+        post = super().update(instance, validated_data)
+        
+        # Обновление тегов, если они были переданы
+        if tags_list is not None:
+            tag_objects = []
+            for tag_name in tags_list:
+                tag_name = tag_name.strip().lower()
+                if tag_name:
+                    tag, created = Tag.objects.get_or_create(name=tag_name)
+                    tag_objects.append(tag)
+            post.tags.set(tag_objects)
+        
+        return post
 

@@ -40,6 +40,13 @@ class PostListView(generics.ListCreateAPIView):
     queryset = Post.objects.filter(deleted_at__isnull=True)
     serializer_class = PostSerializer
 
+    def get_queryset(self):
+        queryset = Post.objects.filter(deleted_at__isnull=True)
+        community = self.request.query_params.get('community', None)
+        if community:
+            queryset = queryset.filter(community=community)
+        return queryset
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request

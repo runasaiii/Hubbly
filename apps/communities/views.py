@@ -15,12 +15,22 @@ class CommunityListView(generics.ListCreateAPIView):
     queryset = Community.objects.all()
     serializer_class = CommunitySerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
 class CommunityDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     Community Detail View controller
     """
     queryset = Community.objects.all()
     serializer_class = CommunitySerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 class CommunityPageListView(ListView):

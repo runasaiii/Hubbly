@@ -1,19 +1,22 @@
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { postsApi } from '@/shared/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { postsApi, communitiesApi } from '@/shared/api';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Textarea } from '@/shared/components/ui/textarea';
+import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { ArrowLeft, Send, X, Sparkles, FileText, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { ArrowLeft, Send, X, Sparkles, FileText, AlertCircle, Users, Hash, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const postSchema = z.object({
   content: z.string().min(1, 'Контент обязателен').min(10, 'Минимум 10 символов'),
   community: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 type PostFormData = z.infer<typeof postSchema>;
@@ -21,18 +24,56 @@ type PostFormData = z.infer<typeof postSchema>;
 export const CreatePostPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const communityFromUrl = searchParams.get('community');
   const [charCount, setCharCount] = useState(0);
+  const [tagInput, setTagInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<PostFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, control, setValue } = useForm<PostFormData>({
     resolver: zodResolver(postSchema),
+    defaultValues: {
+      content: '',
+      community: communityFromUrl || '',
+      tags: [],
+    },
   });
 
   const contentValue = watch('content', '');
+  const selectedCommunity = watch('community', '');
+  
+  // Загрузка сообществ
+  const { data: communitiesData, isLoading: communitiesLoading } = useQuery({
+    queryKey: ['communities'],
+    queryFn: () => communitiesApi.list(),
+  });
+
+  // Устанавливаем сообщество из URL при загрузке
+  useEffect(() => {
+    if (communityFromUrl) {
+      setValue('community', communityFromUrl);
+    }
+  }, [communityFromUrl, setValue]);
+
+  const communitiesArray = Array.isArray(communitiesData) 
+    ? communitiesData 
+    : (communitiesData as any)?.results || [];
+
+  // Фильтруем только публичные сообщества или те, где пользователь является владельцем или членом
+  const availableCommunities = communitiesArray.filter((c: any) => 
+    c.visibility === 'public' || c.owner === user?.id || c.is_member
+  );
   
   // Update character count
-  useState(() => {
+  useEffect(() => {
     setCharCount(contentValue?.length || 0);
-  });
+  }, [contentValue]);
+
+  // Обновляем теги в форме
+  useEffect(() => {
+    setValue('tags', tags);
+  }, [tags, setValue]);
 
   const createMutation = useMutation({
     mutationFn: postsApi.create,
@@ -42,8 +83,41 @@ export const CreatePostPage = () => {
     },
   });
 
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
+      setTags([...tags, trimmedTag]);
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
   const onSubmit = (data: PostFormData) => {
-    createMutation.mutate(data);
+    const submitData: any = {
+      content: data.content,
+    };
+    
+    // Добавляем community только если оно выбрано
+    if (data.community && data.community.trim() !== '') {
+      submitData.community = data.community;
+    }
+    
+    // Добавляем теги только если они есть
+    if (tags.length > 0) {
+      submitData.tags_list = tags;
+    }
+    
+    createMutation.mutate(submitData);
   };
 
   const handleCancel = () => {
@@ -99,6 +173,40 @@ export const CreatePostPage = () => {
         
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Community Selection */}
+            <div className="space-y-3">
+              <Label htmlFor="community" className="text-base font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Сообщество (необязательно)
+              </Label>
+              <Controller
+                name="community"
+                control={control}
+                render={({ field }) => (
+                  <select
+                    {...field}
+                    id="community"
+                    disabled={communitiesLoading}
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Личный пост (без сообщества)</option>
+                    {communitiesLoading ? (
+                      <option disabled>Загрузка сообществ...</option>
+                    ) : (
+                      availableCommunities.map((community: any) => (
+                        <option key={community.id} value={community.id}>
+                          {community.name} {community.visibility === 'public' ? '(Публичное)' : community.visibility === 'private' ? '(Приватное)' : '(Секретное)'}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                Выберите сообщество, чтобы опубликовать пост от его имени. Оставьте пустым для личного поста.
+              </p>
+            </div>
+
             {/* Content Field */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -144,10 +252,66 @@ export const CreatePostPage = () => {
                   <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
                     <li>Минимум 10 символов для публикации</li>
                     <li>Будьте вежливы и уважительны к другим</li>
-                    <li>Добавьте теги для лучшей видимости (скоро)</li>
+                    <li>Добавьте теги для лучшей видимости вашего поста</li>
+                    <li>Выберите сообщество, чтобы опубликовать от его имени</li>
                   </ul>
                 </div>
               )}
+            </div>
+
+            {/* Tags Field */}
+            <div className="space-y-3">
+              <Label htmlFor="tags" className="text-base font-semibold flex items-center gap-2">
+                <Hash className="h-4 w-4" />
+                Теги (необязательно)
+              </Label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    id="tags"
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleTagInputKeyDown}
+                    placeholder="Введите тег и нажмите Enter или кнопку Добавить"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleAddTag}
+                    disabled={!tagInput.trim() || tags.length >= 10}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Добавить
+                  </Button>
+                </div>
+                
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-muted/30 border">
+                    {tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-full font-medium"
+                      >
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground">
+                  Добавьте до 10 тегов для лучшей видимости вашего поста. Теги помогают другим пользователям найти ваш контент.
+                </p>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -210,12 +374,39 @@ export const CreatePostPage = () => {
               <CardTitle className="text-lg">Предварительный просмотр</CardTitle>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Community Preview */}
+            {selectedCommunity && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>
+                  От имени: <span className="font-medium text-foreground">
+                    {availableCommunities.find((c: any) => c.id === selectedCommunity)?.name || 'Сообщество'}
+                  </span>
+                </span>
+              </div>
+            )}
+            
+            {/* Content Preview */}
             <div className="p-4 rounded-lg bg-background border">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
                 {contentValue || 'Ваш текст появится здесь...'}
               </p>
             </div>
+
+            {/* Tags Preview */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1.5 text-xs bg-primary/10 text-primary rounded-full font-medium"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

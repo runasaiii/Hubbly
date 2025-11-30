@@ -1,9 +1,10 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { communitiesApi } from '@/shared/api';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { formatDate } from '@/shared/lib/utils';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { 
   ArrowLeft, 
   Users, 
@@ -17,17 +18,28 @@ import {
   Settings,
   MessageSquare,
   FileText,
-  TrendingUp
+  TrendingUp,
+  Check,
+  Clock
 } from 'lucide-react';
 
 export const CommunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: community, isLoading } = useQuery({
     queryKey: ['community', id],
     queryFn: () => communitiesApi.get(id!),
     enabled: !!id,
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: () => communitiesApi.join(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['community', id] });
+    },
   });
 
   // Функция для определения иконки и цвета видимости
@@ -96,6 +108,12 @@ export const CommunityDetailPage = () => {
   const visibilityInfo = getVisibilityInfo(community.visibility);
   const memberCount = community.members_count || 0;
   const postCount = community.posts_count || 0;
+  
+  // Определяем роль пользователя
+  const isOwner = community.is_owner || false;
+  const isMember = community.is_member || false;
+  const membershipStatus = community.membership_status;
+  const membershipRole = community.membership_role;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-8">
@@ -146,10 +164,61 @@ export const CommunityDetailPage = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button size="lg" className="gap-2 shadow-md">
-                <UserPlus className="h-5 w-5" />
-                Вступить
-              </Button>
+              {isOwner ? (
+                <>
+                  <Button size="lg" variant="outline" className="gap-2 shadow-md" asChild>
+                    <Link to={`/posts/create?community=${id}`}>
+                      <FileText className="h-5 w-5" />
+                      Создать пост
+                    </Link>
+                  </Button>
+                </>
+              ) : isMember ? (
+                <>
+                  {membershipStatus === 'pending' ? (
+                    <Button size="lg" variant="outline" className="gap-2 shadow-md" disabled>
+                      <Clock className="h-5 w-5" />
+                      Заявка на рассмотрении
+                    </Button>
+                  ) : (
+                    <Button size="lg" variant="default" className="gap-2 shadow-md" asChild>
+                      <Link to={`/posts/create?community=${id}`}>
+                        <FileText className="h-5 w-5" />
+                        Создать пост
+                      </Link>
+                    </Button>
+                  )}
+                  <div className="px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {membershipRole === 'organizer' ? 'Организатор' : 
+                       membershipRole === 'moderator' ? 'Модератор' : 
+                       'Участник'}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    size="lg" 
+                    className="gap-2 shadow-md"
+                    onClick={() => joinMutation.mutate()}
+                    disabled={joinMutation.isPending || !user}
+                  >
+                    {joinMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Вступление...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-5 w-5" />
+                        Вступить
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
               <Button variant="outline" size="lg" className="gap-2">
                 <Share2 className="h-4 w-4" />
               </Button>
@@ -286,17 +355,30 @@ export const CommunityDetailPage = () => {
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Посмотреть посты
+              <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                <Link to={`/posts?community=${id}`}>
+                  <MessageSquare className="h-4 w-4" />
+                  Посмотреть посты ({postCount})
+                </Link>
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-2"
+                onClick={async () => {
+                  try {
+                    const members = await communitiesApi.getMembers(id!);
+                    alert(`Участников: ${members.length}\n\n${members.map((m: any) => `${m.user_username} (${m.role})`).join('\n')}`);
+                  } catch (error) {
+                    alert('Не удалось загрузить список участников');
+                  }
+                }}
+              >
                 <Users className="h-4 w-4" />
-                Участники
+                Участники ({memberCount})
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button variant="outline" className="w-full justify-start gap-2" disabled>
                 <Share2 className="h-4 w-4" />
-                Пригласить друзей
+                Пригласить друзей (скоро)
               </Button>
             </div>
           </CardContent>

@@ -1,22 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { postsApi } from '@/shared/api';
+import { Link, useSearchParams } from 'react-router-dom';
+import { postsApi, communitiesApi } from '@/shared/api';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { formatDate } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { Plus, Clock, MessageSquare, Heart, Sparkles } from 'lucide-react';
+import { Plus, Clock, MessageSquare, Heart, Sparkles, Users } from 'lucide-react';
 
 export const PostsListPage = () => {
   const { user, token } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const communityId = searchParams.get('community');
 
   const { data: posts, isLoading, error } = useQuery({
-    queryKey: ['posts'],
-    queryFn: () => postsApi.list(),
+    queryKey: ['posts', communityId],
+    queryFn: () => postsApi.list(communityId ? { community: communityId } : undefined),
   });
 
   const postsArray = Array.isArray(posts) ? posts : (posts as any)?.results || [];
+
+  // Загружаем информацию о сообществе, если фильтруем по нему
+  const { data: communityData } = useQuery({
+    queryKey: ['community', communityId],
+    queryFn: () => communitiesApi.get(communityId!),
+    enabled: !!communityId,
+  });
 
   const likeMutation = useMutation({
     mutationFn: (postId: string) => {
@@ -86,13 +95,19 @@ export const PostsListPage = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-5 w-5 animate-pulse" />
-              <span className="text-sm font-medium opacity-90">Лента публикаций</span>
+              <span className="text-sm font-medium opacity-90">
+                {communityData ? `Посты сообщества "${communityData.name}"` : 'Лента публикаций'}
+              </span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">Посты</h1>
+            <h1 className="text-4xl font-bold tracking-tight">
+              {communityData ? communityData.name : 'Посты'}
+            </h1>
             <p className="text-white/80">
               {postsArray.length > 0 
-                ? `${postsArray.length} ${postsArray.length === 1 ? 'публикация' : 'публикаций'} от сообщества`
-                : 'Будьте первым, кто создаст пост'
+                ? `${postsArray.length} ${postsArray.length === 1 ? 'публикация' : 'публикаций'}`
+                : communityData 
+                  ? 'В этом сообществе пока нет постов'
+                  : 'Будьте первым, кто создаст пост'
               }
             </p>
           </div>
@@ -134,26 +149,58 @@ export const PostsListPage = () => {
             >
               <CardHeader className="border-b bg-gradient-to-r from-muted/30 to-transparent">
                 <div className="flex items-start justify-between">
-                  <Link 
-                    to={`/profile/${post.author}`}
-                    className="flex items-center gap-4 hover:opacity-80 transition-opacity"
-                  >
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold text-white shadow-md">
-                        {post.author_username?.[0]?.toUpperCase() || 'U'}
+                  {post.community ? (
+                    <Link 
+                      to={`/communities/${post.community}`}
+                      className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+                    >
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-lg font-bold text-white shadow-md">
+                          {post.community_name?.[0]?.toUpperCase() || 'C'}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <Users className="h-2.5 w-2.5 text-white" />
+                        </div>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg hover:text-primary transition-colors cursor-pointer">
-                        {post.author_username}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatDate(post.created_at)}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg hover:text-primary transition-colors cursor-pointer">
+                            {post.community_name}
+                          </CardTitle>
+                          <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
+                            Сообщество
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDate(post.created_at)}</span>
+                          <span className="text-xs">•</span>
+                          <span className="text-xs">от {post.author_username}</span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  ) : (
+                    <Link 
+                      to={`/profile/${post.author}`}
+                      className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+                    >
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold text-white shadow-md">
+                          {post.author_username?.[0]?.toUpperCase() || 'U'}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg hover:text-primary transition-colors cursor-pointer">
+                          {post.author_username}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDate(post.created_at)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               </CardHeader>
               
