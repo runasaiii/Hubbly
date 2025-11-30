@@ -23,6 +23,7 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     'rest_framework_simplejwt',
     'debug_toolbar',
     "corsheaders",
+    'django_extensions',
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

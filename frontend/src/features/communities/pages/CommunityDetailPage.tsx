@@ -7,7 +7,6 @@ import { formatDate } from '@/shared/lib/utils';
 import { 
   ArrowLeft, 
   Users, 
-  User, 
   Crown,
   Calendar,
   Lock,

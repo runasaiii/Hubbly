@@ -163,7 +163,11 @@ export const PostsListPage = () => {
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      <span>Комментарии</span>
+                      <span>
+                        {post.comments_count ?? 0} {post.comments_count === 1 ? 'комментарий' : 'комментариев'}
+                      </span>
+
+
                     </Link>
                   </div>
                   

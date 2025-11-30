@@ -15,11 +15,14 @@ from rest_framework.decorators import action
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_204_NO_CONTENT
+from rest_framework.response import Response
 
 # Project Modules
 from .models import Post
 from .serializers import PostSerializer
 from .models import Post
+from .models import Comment
+from .serializers import CommentSerializer
 
 
 class PostCreateView(CreateView):
@@ -214,3 +217,43 @@ class PostViewSet(ViewSet):
             data=serializer.data,
             status=HTTP_200_OK
         )
+    
+
+from rest_framework.viewsets import ViewSet
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST
+
+from .models import Post, Comment
+from .serializers import CommentSerializer
+
+class CommentViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_post(self):
+        post_id = self.kwargs.get('post_id')
+        try:
+            return Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            return None
+
+    def list(self, request, post_id=None):
+        post = self.get_post()
+        if not post:
+            return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
+        
+        comments = Comment.objects.filter(post=post, parent__isnull=True).order_by('created_at')
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data, status=HTTP_200_OK)
+
+    def create(self, request, post_id=None):
+        post = self.get_post()
+        if not post:
+            return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
+
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            # Сохраняем автора и пост автоматически
+            serializer.save(author=request.user, post=post)
+            return Response(serializer.data, status=HTTP_201_CREATED)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)

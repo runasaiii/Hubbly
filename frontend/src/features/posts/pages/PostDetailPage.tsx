@@ -7,12 +7,12 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { formatDate } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useState } from 'react';
-import { ArrowLeft, Trash2, Clock, MessageSquare, Heart, Send, User } from 'lucide-react';
+import { ArrowLeft, Trash2, Clock, MessageSquare, Heart, Send } from 'lucide-react';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth(); // <- берём token из контекста
   const [comment, setComment] = useState('');
   const queryClient = useQueryClient();
 
@@ -29,18 +29,24 @@ export const PostDetailPage = () => {
   });
 
   const createCommentMutation = useMutation({
-    mutationFn: postsApi.createComment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['post-comments', id] });
-      setComment('');
-    },
-  });
+  mutationFn: ({ content }: { content: string }) => {
+    if (!token) throw new Error('Не авторизован');
+    return postsApi.createComment(id!, { content }, token);
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['post-comments', id] });
+    setComment('');
+  },
+});
+
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim() || !id) return;
-    createCommentMutation.mutate({ post: id, content: comment });
-  };
+    if (!comment.trim() || !id || !token) return;
+    createCommentMutation.mutate({ content: comment });
+};
+
+
 
   if (isLoading) {
     return (

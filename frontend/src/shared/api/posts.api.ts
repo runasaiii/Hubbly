@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/lib/api';
-import type { Post, Comment, CreatePostRequest, CreateCommentRequest, PaginatedResponse } from '@/shared/types';
+import type { Post, Comment, CreatePostRequest, PaginatedResponse } from '@/shared/types';
 
 export const postsApi = {
   list: (params?: { community?: string; search?: string }): Promise<Post[] | PaginatedResponse<Post>> =>
@@ -20,10 +20,26 @@ export const postsApi = {
   getUserPosts: (userId: string): Promise<Post[]> =>
     apiClient.get(`/posts/v1/user/${userId}`),
 
-  getComments: (postId: string): Promise<Comment[]> =>
-    apiClient.get(`/posts/api/${postId}/comments/`).catch(() => []),
+  getComments: async (postId: string): Promise<Comment[]> => {
+  try {
+    return await apiClient.get<Comment[]>(`/posts/${postId}/comments/`);
+  } catch {
+    return [];
+  }
+},
 
-  createComment: (data: CreateCommentRequest): Promise<Comment> =>
-    apiClient.post('/posts/api/comments/', data),
+
+  createComment: async (postId: string, data: { content: string }, token: string): Promise<Comment> => {
+  return apiClient.post(
+    `/posts/${postId}/comments/`,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+},
+
 };
-

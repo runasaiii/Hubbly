@@ -1,31 +1,32 @@
-from django.urls import path, include
+from django.urls import path
 from rest_framework.routers import DefaultRouter
-from .views import (
-    PostListView, 
-    PostDetailView,
-    PostPageListView, 
-    PostPageDetailView,
-    PostCreateView,
-    PostViewSet,
-)
+from .views import PostViewSet, CommentViewSet, PostPageListView, PostPageDetailView, PostCreateView, PostListView, PostDetailView
 
 router = DefaultRouter(trailing_slash=False)
-router.register(prefix='v1', viewset=PostViewSet, basename='post')
+router.register(r'v1', PostViewSet, basename='post')
+
+comment_list = CommentViewSet.as_view({
+    'get': 'list',
+    'post': 'create',
+})
 
 urlpatterns = [
-    # HTML pages (default)
+    # HTML pages
     path('', PostPageListView.as_view(), name='post-page-list'),
     path('<uuid:pk>/', PostPageDetailView.as_view(), name='post-page-detail'),
-
-    # New: page for creating posts
     path('create/', PostCreateView.as_view(), name='post-page-create'),
 
     # Back-compat aliases
     path('page/', PostPageListView.as_view(), name='post-page-list-legacy'),
     path('page/<uuid:pk>/', PostPageDetailView.as_view(), name='post-page-detail-legacy'),
 
-    # REST API
+    # Комментарии привязанные к посту
+    path('<uuid:post_id>/comments/', comment_list, name='post-comments'),
+
+    # REST API постов
     path('api/', PostListView.as_view(), name='post-list'),
     path('api/<uuid:pk>/', PostDetailView.as_view(), name='post-detail'),
-    path('', include(router.urls)),
 ]
+
+# Добавляем рутер только для PostViewSet
+urlpatterns += router.urls
