@@ -13,6 +13,9 @@ from django.views.generic import RedirectView, TemplateView
 # Project modules
 from apps.users.views import CustomTokenObtainPairView
 
+# Django Toolbar
+from debug_toolbar.toolbar import debug_toolbar_urls
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     #path('', include('apps.core.urls')),
@@ -27,4 +30,4 @@ urlpatterns = [
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-]
+] + debug_toolbar_urls()
