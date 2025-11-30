@@ -18,11 +18,8 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CR
 from rest_framework.response import Response
 
 # Project Modules
-from .models import Post
-from .serializers import PostSerializer
-from .models import Post
-from .models import Comment
-from .serializers import CommentSerializer
+from .models import Post, Like, Comment
+from .serializers import PostSerializer, CommentSerializer
 
 
 class PostCreateView(CreateView):
@@ -40,8 +37,13 @@ class PostListView(generics.ListCreateAPIView):
     """
     Post List View controller
     """
-    queryset = Post.objects.all()
+    queryset = Post.objects.filter(deleted_at__isnull=True)
     serializer_class = PostSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -52,8 +54,13 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     Post Detail View controller
     """
-    queryset = Post.objects.all()
+    queryset = Post.objects.filter(deleted_at__isnull=True)
     serializer_class = PostSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 class PostPageListView(ListView):
@@ -89,11 +96,12 @@ class PostViewSet(ViewSet):
     ) -> DRFResponse:
         """ Creating GET request"""
 
-        all_posts: QuerySet[Post] = Post.objects.all()
+        all_posts: QuerySet[Post] = Post.objects.filter(deleted_at__isnull=True)
 
         serializer: PostSerializer = PostSerializer(
             all_posts,
             many=True,
+            context={'request': request}
         )
 
         return DRFResponse(
@@ -111,7 +119,8 @@ class PostViewSet(ViewSet):
         """ Creating POST request"""
 
         serializer: PostSerializer = PostSerializer(
-            data=request.data
+            data=request.data,
+            context={'request': request}
         )
 
         if not serializer.is_valid():
@@ -120,7 +129,7 @@ class PostViewSet(ViewSet):
                 status=HTTP_400_BAD_REQUEST,
             )
 
-        serializer.save()
+        serializer.save(author=request.user)
 
         return DRFResponse(
             data=serializer.data,
@@ -150,6 +159,7 @@ class PostViewSet(ViewSet):
             data=request.data,
             instance=post,
             partial=True,
+            context={'request': request}
         )
 
         serializer.is_valid()
@@ -210,8 +220,8 @@ class PostViewSet(ViewSet):
                 status=HTTP_404_NOT_FOUND
             )
         
-        user_posts = Post.objects.filter(author=target_user).order_by('-created_at')
-        serializer = PostSerializer(user_posts, many=True)
+        user_posts = Post.objects.filter(author=target_user, deleted_at__isnull=True).order_by('-created_at')
+        serializer = PostSerializer(user_posts, many=True, context={'request': request})
         
         return DRFResponse(
             data=serializer.data,
@@ -257,3 +267,45 @@ class CommentViewSet(ViewSet):
             serializer.save(author=request.user, post=post)
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class LikeViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_post(self):
+        post_id = self.kwargs.get('post_id')
+        try:
+            return Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            return None
+
+    def create(self, request, post_id=None):
+        """Like a post"""
+        post = self.get_post()
+        if not post:
+            return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
+
+        like, created = Like.objects.get_or_create(
+            post=post,
+            user=request.user
+        )
+
+        if not created:
+            return Response({'detail': 'Post already liked'}, status=HTTP_400_BAD_REQUEST)
+
+        serializer = PostSerializer(post, context={'request': request})
+        return Response(serializer.data, status=HTTP_201_CREATED)
+
+    def destroy(self, request, post_id=None):
+        """Unlike a post"""
+        post = self.get_post()
+        if not post:
+            return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
+
+        try:
+            like = Like.objects.get(post=post, user=request.user)
+            like.delete()
+            serializer = PostSerializer(post, context={'request': request})
+            return Response(serializer.data, status=HTTP_200_OK)
+        except Like.DoesNotExist:
+            return Response({'detail': 'Post not liked'}, status=HTTP_400_BAD_REQUEST)

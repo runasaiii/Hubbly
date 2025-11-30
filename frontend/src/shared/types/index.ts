@@ -75,6 +75,8 @@ export interface Post extends BaseModel {
   content: string;
   pinned: boolean;
   tags: Tag[];
+  likes_count?: number;
+  is_liked?: boolean;
 }
 
 export interface Comment extends BaseModel {

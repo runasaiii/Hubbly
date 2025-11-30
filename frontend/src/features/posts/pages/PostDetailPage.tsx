@@ -39,6 +39,36 @@ export const PostDetailPage = () => {
   },
 });
 
+  const likeMutation = useMutation({
+    mutationFn: () => {
+      if (!token) throw new Error('Не авторизован');
+      return postsApi.like(id!, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post', id] });
+    },
+  });
+
+  const unlikeMutation = useMutation({
+    mutationFn: () => {
+      if (!token) throw new Error('Не авторизован');
+      return postsApi.unlike(id!, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post', id] });
+    },
+  });
+
+  const handleLike = () => {
+    if (!user || !token) return;
+    
+    if (post.is_liked) {
+      unlikeMutation.mutate();
+    } else {
+      likeMutation.mutate();
+    }
+  };
+
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,11 +183,25 @@ export const PostDetailPage = () => {
 
           {/* Actions Bar */}
           <div className="flex items-center gap-6">
-            <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-red-500 transition-colors group">
-              <div className="p-2 rounded-full group-hover:bg-red-50 transition-colors">
-                <Heart className="h-5 w-5" />
+            <button 
+              onClick={handleLike}
+              disabled={!user || likeMutation.isPending || unlikeMutation.isPending}
+              className={`flex items-center gap-2 text-sm transition-colors group disabled:opacity-50 disabled:cursor-not-allowed ${
+                post.is_liked 
+                  ? 'text-red-500' 
+                  : 'text-muted-foreground hover:text-red-500'
+              }`}
+            >
+              <div className={`p-2 rounded-full transition-colors ${
+                post.is_liked 
+                  ? 'bg-red-50' 
+                  : 'group-hover:bg-red-50'
+              }`}>
+                <Heart className={`h-5 w-5 ${post.is_liked ? 'fill-current' : ''}`} />
               </div>
-              <span className="font-medium">Нравится</span>
+              <span className="font-medium">
+                {post.likes_count ?? 0} {post.likes_count === 1 ? 'лайк' : 'лайков'}
+              </span>
             </button>
             <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
               <div className="p-2 rounded-full group-hover:bg-primary/10 transition-colors">

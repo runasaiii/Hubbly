@@ -1,18 +1,54 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { postsApi } from '@/shared/api';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { formatDate } from '@/shared/lib/utils';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { Plus, Clock, MessageSquare, Heart, Sparkles } from 'lucide-react';
 
 export const PostsListPage = () => {
+  const { user, token } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: posts, isLoading, error } = useQuery({
     queryKey: ['posts'],
     queryFn: () => postsApi.list(),
   });
 
   const postsArray = Array.isArray(posts) ? posts : (posts as any)?.results || [];
+
+  const likeMutation = useMutation({
+    mutationFn: (postId: string) => {
+      if (!token) throw new Error('Не авторизован');
+      return postsApi.like(postId, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+  });
+
+  const unlikeMutation = useMutation({
+    mutationFn: (postId: string) => {
+      if (!token) throw new Error('Не авторизован');
+      return postsApi.unlike(postId, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+  });
+
+  const handleLike = (post: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user || !token) return;
+    
+    if (post.is_liked) {
+      unlikeMutation.mutate(post.id);
+    } else {
+      likeMutation.mutate(post.id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -154,9 +190,19 @@ export const PostsListPage = () => {
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex items-center gap-6">
-                    <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-red-500 transition-colors">
-                      <Heart className="h-4 w-4" />
-                      <span>Нравится</span>
+                    <button 
+                      onClick={(e) => handleLike(post, e)}
+                      disabled={!user || likeMutation.isPending || unlikeMutation.isPending}
+                      className={`flex items-center gap-2 text-sm transition-colors ${
+                        post.is_liked 
+                          ? 'text-red-500' 
+                          : 'text-muted-foreground hover:text-red-500'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <Heart className={`h-4 w-4 ${post.is_liked ? 'fill-current' : ''}`} />
+                      <span>
+                        {post.likes_count ?? 0} {post.likes_count === 1 ? 'лайк' : 'лайков'}
+                      </span>
                     </button>
                     <Link 
                       to={`/posts/${post.id}`}

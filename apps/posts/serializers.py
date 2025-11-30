@@ -2,7 +2,7 @@
 from rest_framework import serializers
 
 # Project modules
-from .models import Post, Comment, Tag
+from .models import Post, Comment, Tag, Like
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -28,9 +28,11 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     author_username = serializers.ReadOnlyField(source='author.username')
-    community_slug = serializers.ReadOnlyField(source='community.slug')
+    community_slug = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
-    comments_count = serializers.SerializerMethodField()  # ← добавляем поле
+    comments_count = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -44,10 +46,26 @@ class PostSerializer(serializers.ModelSerializer):
             'pinned',
             'tags',
             'created_at',
-            'comments_count', 
+            'comments_count',
+            'likes_count',
+            'is_liked',
         ]
-        read_only_fields = ['id', 'created_at', 'author', 'comments_count']
+        read_only_fields = ['id', 'created_at', 'author', 'comments_count', 'likes_count', 'is_liked']
+
+    def get_community_slug(self, obj):
+        if obj.community:
+            return obj.community.slug
+        return None
 
     def get_comments_count(self, obj):
         return obj.comments.count()
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(user=request.user).exists()
+        return False
 

@@ -5,6 +5,7 @@ from .models import (
     Comment,
     Tag,
     Report,
+    Like,
 )
 
 #register Post App
@@ -32,4 +33,13 @@ class TagAdmin(ModelAdmin):
 @register(Report)
 class ReportAdmin(ModelAdmin):
     ...
+
+#register Like App
+@register(Like)
+class LikeAdmin(ModelAdmin):
+    list_display = ('id', 'post', 'user', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user__email', 'user__username', 'post__content')
+    date_hierarchy = 'created_at'
+
 # Register your models here.

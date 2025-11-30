@@ -88,6 +88,35 @@ class Comment(AbstractBaseModel):
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.id}"
 
+class Like(models.Model):
+    """
+    Like model for posts.
+    """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    post = models.ForeignKey(
+        to=Post,
+        on_delete=models.CASCADE,
+        related_name='likes'
+    )
+    user = models.ForeignKey(
+        to=settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='post_likes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['post', 'user']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Like by {self.user.username} on post {self.post.id}"
+
+
 class Report(models.Model):
     """
     Report model ith common fields.

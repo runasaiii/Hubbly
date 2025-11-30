@@ -42,4 +42,28 @@ export const postsApi = {
   );
 },
 
+  like: async (postId: string, token: string): Promise<Post> => {
+    return apiClient.post(
+      `/posts/${postId}/like/`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  },
+
+  unlike: async (postId: string, token: string): Promise<Post> => {
+    return apiClient.delete(
+      `/posts/${postId}/like/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+  },
+
 };
