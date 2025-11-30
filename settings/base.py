@@ -10,7 +10,6 @@ ASGI_APPLICATION = 'settings.asgi.application'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
 # APPS
 DJANGO_AND_THIRD_PARTY_APPS = [
     'unfold',
@@ -24,7 +23,11 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     'rest_framework_simplejwt',
     'debug_toolbar',
 ]
-
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 PROJECT_APPS = [
     "apps.users.apps.UsersConfig",
     "apps.posts.apps.PostsConfig",
@@ -45,7 +48,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 TEMPLATES = [
     {
@@ -76,12 +78,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# DRF
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
