@@ -25,10 +25,10 @@ urlpatterns = [
     path('page/', PostPageListView.as_view(), name='post-page-list-legacy'),
     path('page/<uuid:pk>/', PostPageDetailView.as_view(), name='post-page-detail-legacy'),
 
-    # Комментарии привязанные к посту
+    # Comments linked to the post
     path('<uuid:post_id>/comments/', comment_list, name='post-comments'),
 
-    # Лайки привязанные к посту
+    # Likes linked to a post
     path('<uuid:post_id>/like/', like_detail, name='post-like'),
 
     # REST API постов

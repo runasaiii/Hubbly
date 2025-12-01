@@ -60,6 +60,21 @@ class EventViewSet(ViewSet):
     """
     permission_classes = (IsAuthenticated,)
 
+    def get_query(self):
+        """ Optimized Queryset which have:
+                - author
+                - prefetch_related
+                - select_related
+                 - annotate (likes_count and comments_count)
+        """
+        return(
+            Event.objects
+            .filter(deleted_at__isnull=True)
+            .select_related('author')
+            .annotate(
+                users_count=Count('users', distinct=True)
+            )
+        )
     def list(
             self,
             request: DRFRequest,
@@ -68,9 +83,7 @@ class EventViewSet(ViewSet):
     ) -> DRFResponse:
         """ Creating GET request"""
 
-        all_events:  QuerySet[Event] = Event.objects.annotate(
-            users_count=Count('users', distinct=True)
-        ).all()
+        all_events:  QuerySet[Event] = self.get_query().all()
 
         serializer: EventSerializer = EventSerializer(
             all_events,
@@ -117,7 +130,7 @@ class EventViewSet(ViewSet):
         """ Creating PATCH request"""
 
         try:
-            event: Event = Event.objects.get(id=kwargs['pk'])
+            event: Event = self.get_query().get(id=kwargs['pk'])
         except Event.DoesNotExist:
             return DRFResponse(
                 data={
@@ -151,7 +164,7 @@ class EventViewSet(ViewSet):
         """ Creating PATCH request"""
 
         try:
-            event: Event = Event.objects.get(id=kwargs['pk'])
+            event: Event = self.get_query().get(id=kwargs['pk'])
         except Event.DoesNotExist:
             return DRFResponse(
                 data={

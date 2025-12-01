@@ -10,7 +10,7 @@ from django.shortcuts import redirect
 from django.views.generic import CreateView
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
@@ -20,6 +20,7 @@ from rest_framework.response import Response
 # Project Modules
 from .models import Post, Like, Comment
 from .serializers import PostSerializer, CommentSerializer
+from apps.users.models import CustomUser
 
 
 class PostCreateView(CreateView):
@@ -54,7 +55,6 @@ class PostListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -95,6 +95,26 @@ class PostViewSet(ViewSet):
     """
     permission_classes = (IsAuthenticated,)
 
+    def get_queryset(self):
+
+        """ Optimized Queryset which have:
+               - author
+               - prefetch_related
+               - select_related
+               - annotate (likes_count and comments_count)
+        """
+        return(
+            Post.objects
+            .filter(deleted_at__isnull=True)
+            .select_related('author')
+            .prefetch_related('comments', 'likes')
+            .annotate(
+                likes_count=Count('likes', distinct=True),
+                comments_count=Count('comments', distinct=True)
+            )
+        )
+
+
     def list(
             self,
             request: DRFRequest,
@@ -103,7 +123,7 @@ class PostViewSet(ViewSet):
     ) -> DRFResponse:
         """ Creating GET request"""
 
-        all_posts: QuerySet[Post] = Post.objects.filter(deleted_at__isnull=True)
+        all_posts: QuerySet[Post] = self.get_queryset()
 
         serializer: PostSerializer = PostSerializer(
             all_posts,
@@ -153,7 +173,7 @@ class PostViewSet(ViewSet):
         """ Creating PATCH request"""
 
         try:
-            post: Post = Post.objects.get(pk=kwargs['pk'])
+            post: Post = self.get_queryset().get(pk=kwargs['pk'])
         except Post.DoesNotExist:
             return DRFResponse(
                 data={
@@ -188,7 +208,7 @@ class PostViewSet(ViewSet):
         """ Creating DELETE request"""
 
         try:
-            post: Post = Post.objects.get(id=kwargs['id'])
+            post: Post = self.get_queryset().get(id=kwargs['id'])
         except Post.DoesNotExist:
             return DRFResponse(
                 data={
@@ -219,7 +239,6 @@ class PostViewSet(ViewSet):
         """Get posts by specific user"""
         user_id = kwargs.get('user_id')
         try:
-            from apps.users.models import CustomUser
             target_user = CustomUser.objects.get(pk=user_id)
         except CustomUser.DoesNotExist:
             return DRFResponse(
@@ -227,22 +246,17 @@ class PostViewSet(ViewSet):
                 status=HTTP_404_NOT_FOUND
             )
         
-        user_posts = Post.objects.filter(author=target_user, deleted_at__isnull=True).order_by('-created_at')
+        user_posts = (self.get_queryset()
+                      .filter(author=target_user, deleted_at__isnull=True)
+                      .order_by('-created_at'))
+
         serializer = PostSerializer(user_posts, many=True, context={'request': request})
         
         return DRFResponse(
             data=serializer.data,
             status=HTTP_200_OK
         )
-    
 
-from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST
-
-from .models import Post, Comment
-from .serializers import CommentSerializer
 
 class CommentViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
@@ -250,7 +264,13 @@ class CommentViewSet(ViewSet):
     def get_post(self):
         post_id = self.kwargs.get('post_id')
         try:
-            return Post.objects.get(id=post_id)
+            return (
+                Post.objects
+                .select_related('author')
+                .prefetch_related('comments')
+                .prefetch_related('replies__author')
+                .get(id=post_id)
+            )
         except Post.DoesNotExist:
             return None
 
@@ -259,7 +279,11 @@ class CommentViewSet(ViewSet):
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
         
-        comments = Comment.objects.filter(post=post, parent__isnull=True).order_by('created_at')
+        comments = (Comment.objects
+                    .filter(post=post, parent__isnull=True)
+                    .select_related('author')
+                    .order_by('created_at'))
+
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=HTTP_200_OK)
 
@@ -282,7 +306,12 @@ class LikeViewSet(ViewSet):
     def get_post(self):
         post_id = self.kwargs.get('post_id')
         try:
-            return Post.objects.get(id=post_id)
+            return (
+                Post.objects
+                .select_related('author')
+                .prefetch_related('likes')
+                .get(id=post_id)
+            )
         except Post.DoesNotExist:
             return None
 
