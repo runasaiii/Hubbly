@@ -14,6 +14,8 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'user',
+            'organizer_username',
+            'community_slug',
         ]
         read_only_fields = ['id']
 

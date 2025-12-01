@@ -24,11 +24,19 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     'debug_toolbar',
     "corsheaders",
     'django_extensions',
+    'drf_spectacular',
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'My API',
+    'DESCRIPTION': 'Описание моего API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 PROJECT_APPS = [
     "apps.users.apps.UsersConfig",
@@ -113,6 +121,7 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+
 
 
 
