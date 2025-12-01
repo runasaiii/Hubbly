@@ -1,5 +1,6 @@
-#
+# Django modules
 from django.core.exceptions import ValidationError
+
 
 _RESTRICTED_DOMAINS = {'spam.com', 'banned.com', 'fakeemail.com'}
 

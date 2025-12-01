@@ -47,8 +47,6 @@ export const usersApi = {
         return profile;
       }
     }
-
-    // Используем PATCH, так как бэкенд поддерживает этот метод
     return await apiClient.patch<Profile>('/users/v1/user/profile', data);
   },
 };

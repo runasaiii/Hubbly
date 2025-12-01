@@ -9,8 +9,10 @@ from .views import (
     UserPageDetailView,
     CustomUserViewSet
 )
+
 # Django Rest Framework modules
 from rest_framework.routers import DefaultRouter
+
 
 router: DefaultRouter = DefaultRouter(
     trailing_slash=False
@@ -21,14 +23,12 @@ router.register(
     basename='user',
 )
 urlpatterns = [
-    # HTML pages (default)
     path('', UserPageListView.as_view(), name='user-page-list'),
     path('<int:pk>/', UserPageDetailView.as_view(), name='user-page-detail'),
-    # Back-compat aliases
+
     path('page/', UserPageListView.as_view(), name='user-page-list-legacy'),
     path('page/<int:pk>/', UserPageDetailView.as_view(), name='user-page-detail-legacy'),
 
-    # REST API
     path('api/', user_list, name='user-list'),
     path('api/<int:user_id>/', user_detail, name='user-detail'),
     path('v1/', include(router.urls))

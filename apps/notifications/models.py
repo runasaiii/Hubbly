@@ -1,8 +1,11 @@
-#Django models
+# Pthon modules
 import uuid
+
+#Django models
 from django.db import models
 from django.conf import settings
-#App modules
+
+# Project modules
 from apps.abstracts.models import AbstractBaseModel
 
 class Notification(AbstractBaseModel):

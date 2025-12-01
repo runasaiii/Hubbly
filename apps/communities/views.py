@@ -1,8 +1,10 @@
 #Django modules
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView
+
 #DRF
 from rest_framework import generics
+
 #App modules
 from .models import Community
 from .serializers import CommunitySerializer

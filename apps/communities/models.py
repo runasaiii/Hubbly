@@ -1,10 +1,13 @@
+# Python modules
+import uuid
+
 #Django modules
 from django.db import models
 from django.conf import settings
-import uuid
 
-#App modules
+# Project modules
 from apps.abstracts.models import AbstractBaseModel
+
 
 class Community(AbstractBaseModel):
     """

@@ -5,9 +5,9 @@ from typing import Any
 from django.views.generic import ListView, DetailView
 from django.db.models import QuerySet, Count
 from django.shortcuts import redirect
+from django.views.generic import CreateView
 
 # Django Rest Framework Modules
-from django.views.generic import CreateView
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny

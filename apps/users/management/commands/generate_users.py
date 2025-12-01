@@ -11,6 +11,8 @@ from django.db.models import QuerySet
 
 # Project modules
 from apps.users.models import CustomUser
+
+
 class Command(BaseCommand):
     help = "Generate users for testing purpose"
 

@@ -1,5 +1,11 @@
-# Django Rest modules
+# Python modules
 from typing import Any, Optional
+
+# Django modules
+from django.contrib.auth.password_validation import validate_password
+
+# DRF modules
+from rest_framework_simplejwt.tokens import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     Serializer,
@@ -10,9 +16,6 @@ from rest_framework.serializers import (
     ModelSerializer
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-# Django modules
-from django.contrib.auth.password_validation import validate_password
 
 # Project modules
 from .models import CustomUser, Profile
@@ -58,13 +61,13 @@ class UserCreateSerializer(ModelSerializer):
             'full_name': {'required': False, 'allow_blank': True}
         }
     
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> CustomUser:
         password = validated_data.pop('password')
 
-        # Provide default full_name if not provided
         if 'full_name' not in validated_data or not validated_data.get('full_name'):
             validated_data['full_name'] = validated_data.get('username', '')
-        user = CustomUser.objects.create_user(
+        
+        user: CustomUser = CustomUser.objects.create_user(
             password=password,
             **validated_data
         )
@@ -136,7 +139,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom serializer to include user data in JWT token response"""
     
     @classmethod
-    def get_token(cls, user):
+    def get_token(cls, user: CustomUser) -> Token:
         token = super().get_token(user)
 
         token['username'] = user.username
@@ -175,10 +178,10 @@ class RegistrationSerializer(Serializer):
             'password'
         ]
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> CustomUser:
         return CustomUser.objects.create_user(**validated_data)
 
-# Saya's code for Login
+
 class UserLoginSerializer(Serializer):
     """ Serializer for user login. """
     email = EmailField(
@@ -221,4 +224,4 @@ class UserLoginSerializer(Serializer):
                 }
             )
         attrs['user'] = user
-        return super().validate(attrs)
+        return attrs

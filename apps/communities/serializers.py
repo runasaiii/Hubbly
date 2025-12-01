@@ -1,4 +1,7 @@
+# DRF modules
 from rest_framework import serializers
+
+# Project modules
 from .models import Community, CommunityMembership
 
 

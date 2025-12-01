@@ -1,7 +1,10 @@
+# Python modules
+import uuid
+
 #Django modules
 from django.db import models
 from django.conf import settings
-import uuid
+
 #App modules
 from apps.communities.models import Community
 

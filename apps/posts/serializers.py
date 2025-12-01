@@ -87,7 +87,6 @@ class PostSerializer(serializers.ModelSerializer):
         tags_list = validated_data.pop('tags_list', [])
         post = super().create(validated_data)
         
-        # Обработка тегов
         if tags_list:
             tag_objects = []
             for tag_name in tags_list:
@@ -103,7 +102,6 @@ class PostSerializer(serializers.ModelSerializer):
         tags_list = validated_data.pop('tags_list', None)
         post = super().update(instance, validated_data)
         
-        # Обновление тегов, если они были переданы
         if tags_list is not None:
             tag_objects = []
             for tag_name in tags_list:

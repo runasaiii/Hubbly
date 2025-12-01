@@ -194,7 +194,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractBaseModel):
         help_text='The date and time of the user\'s last login.',
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.email
     
     USERNAME_FIELD = 'email'
@@ -306,5 +306,5 @@ class Media(AbstractBaseModel):
         blank=True
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.media_type}: {self.title or self.file.name}"

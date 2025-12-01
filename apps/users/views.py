@@ -12,11 +12,9 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 
-
 # Django modules
 from django.http import HttpResponse, JsonResponse
 from django.views.generic import ListView, DetailView
-
 
 # Project modules
 from .models import CustomUser, Profile
@@ -85,11 +83,9 @@ class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
 
 
-# Saya's code for Endpoints
 class CustomUserViewSet(ViewSet):
 
     """ Creating Login Endpoints for CustomUser"""
-    # FIRST ENDPOINT
     @action(
         methods=('POST',),
         detail=False,
@@ -111,7 +107,6 @@ class CustomUserViewSet(ViewSet):
 
         user: CustomUser = serializer.validated_data.pop("user")
 
-        # Generate User's tokens
         refresh_token: RefreshToken = RefreshToken.for_user(user)
         access_token: str = str(refresh_token.access_token)
 
@@ -126,7 +121,6 @@ class CustomUserViewSet(ViewSet):
         )
 
     """ Creating Register Endpoints for CustomUser"""
-    # SECOND ENDPOINT
     @action(
         methods=('POST',),
         detail=False,
@@ -140,9 +134,7 @@ class CustomUserViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-
         serializer: RegistrationSerializer = RegistrationSerializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
         user: CustomUser = serializer.save()
@@ -161,7 +153,6 @@ class CustomUserViewSet(ViewSet):
         )
 
     """ Creating Personal Account Endpoint """
-    # THIRD ENDPOINT
     @action(
         methods=('GET',),
         detail=False,
@@ -184,7 +175,6 @@ class CustomUserViewSet(ViewSet):
         )
 
     """ Creating Profile Endpoints """
-    # FOURTH ENDPOINT - Get and Update Profile (Combined)
     @action(
         methods=('GET', 'PATCH'),
         detail=False,
@@ -201,7 +191,6 @@ class CustomUserViewSet(ViewSet):
         user: CustomUser = request.user
         profile, created = Profile.objects.get_or_create(user=user)
 
-        # GET request - return profile
         if request.method == 'GET':
             serializer = ProfileSerializer(profile)
             return DRFResponse(
@@ -209,11 +198,9 @@ class CustomUserViewSet(ViewSet):
                 status=HTTP_200_OK
             )
 
-        # PATCH request - update profile
         elif request.method == 'PATCH':
             data = request.data.copy()
 
-            # Преобразуем interests из JSON string в list, если нужно
             if 'interests' in data and isinstance(data['interests'], str):
                 import json
                 try:
@@ -221,7 +208,6 @@ class CustomUserViewSet(ViewSet):
                 except json.JSONDecodeError:
                     data['interests'] = []
 
-            # Если есть avatar, сразу сохраняем
             if 'avatar' in request.FILES:
                 profile.avatar = request.FILES['avatar']
 
@@ -231,7 +217,6 @@ class CustomUserViewSet(ViewSet):
 
             return DRFResponse(ProfileSerializer(profile).data, status=HTTP_200_OK)
 
-    # FIFTH ENDPOINT - Upload Avatar
     @action(
         methods=('POST',),
         detail=False,
@@ -258,7 +243,6 @@ class CustomUserViewSet(ViewSet):
             status=200
         )
 
-    # SIXTH ENDPOINT - Get User Profile by ID
     @action(
         methods=('GET',),
         detail=True,
@@ -285,7 +269,6 @@ class CustomUserViewSet(ViewSet):
         profile, created = Profile.objects.get_or_create(user=target_user)
         serializer = ProfileSerializer(profile)
 
-        # Also return user data
         user_serializer = UserSerializer(target_user)
 
         return DRFResponse(
