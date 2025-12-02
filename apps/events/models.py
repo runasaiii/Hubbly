@@ -13,6 +13,8 @@ class Event(models.Model):
     """
               Event model ith common fields.
     """
+    STATUS_MAX_LENGTH = 15
+
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('published', 'Published'),
@@ -32,7 +34,7 @@ class Event(models.Model):
         blank=True
     )
     status = models.CharField(
-        max_length=15,
+        max_length=STATUS_MAX_LENGTH,
         choices=STATUS_CHOICES,
         default='draft'
     )
@@ -60,6 +62,7 @@ class EventApplication(models.Model):
     """
      Event application model ith common fields.
     """
+    STATUS_MAX_LENGTH = 15
     STATUS_CHOICES = [
         ('applied', 'Applied'),
         ('pending', 'Pending'),
@@ -82,7 +85,7 @@ class EventApplication(models.Model):
         on_delete = models.CASCADE,
     )
     status = models.CharField(
-        max_length = 15,
+        max_length = STATUS_MAX_LENGTH,
         choices = STATUS_CHOICES,
         default = 'pending'
     )

@@ -21,6 +21,7 @@ from .serializers import CommunitySerializer
 # Python Modules
 from typing import Any
 
+
 class CommunityListView(generics.ListCreateAPIView):
     """
     Community List View controller
@@ -112,6 +113,9 @@ class CommunityViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     )-> DRFResponse:
+        """
+        POST Endpoint
+        """
 
         serializer: CommunitySerializer = CommunitySerializer(
             data=request.data,

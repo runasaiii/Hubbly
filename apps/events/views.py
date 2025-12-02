@@ -29,23 +29,23 @@ class EventListView(generics.ListCreateAPIView):
     """
     Event List View controller
     """
-    queryset = Event.objects.all()
-    serializer_class = EventSerializer
+    queryset: Event = Event.objects.all()
+    serializer_class: EventSerializer = EventSerializer
 
 
 class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     Event Detail View controller
     """
-    queryset = Event.objects.all()
-    serializer_class = EventSerializer
+    queryset: Event = Event.objects.all()
+    serializer_class: EventSerializer = EventSerializer
 
 
 class EventPageListView(ListView):
     """
     Event Page List View
     """
-    model = Event
+    model: Event = Event
     template_name = 'events/event_list.html'
     context_object_name = 'events'
     paginate_by = 20
@@ -55,7 +55,7 @@ class EventPageDetailView(DetailView):
     """
     Event Page Detail View controller
     """
-    model = Event
+    model: Event = Event
     template_name = 'events/event_detail.html'
     context_object_name = 'event'
 

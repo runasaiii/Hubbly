@@ -95,7 +95,7 @@ class ProfileSerializer(ModelSerializer):
 
 class UserWithProfileSerializer(ModelSerializer):
     """Serializer for user model with nested profile"""
-    profile = ProfileSerializer(read_only=True)
+    profile: ProfileSerializer = ProfileSerializer(read_only=True)
     
     class Meta:
         model = CustomUser

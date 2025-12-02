@@ -1,7 +1,9 @@
-#Django modules
+# Django modules
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
+
+# Project Modules
 from .models import Profile
 
 

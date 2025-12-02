@@ -1,4 +1,7 @@
+# Django Modules
 from django.urls import path
+
+# Project Modules
 from .views import (
     EventListView, EventDetailView,
     EventPageListView, EventPageDetailView,

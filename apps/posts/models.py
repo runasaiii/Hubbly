@@ -124,6 +124,7 @@ class Report(models.Model):
     """
     Report model ith common fields.
     """
+    STATUS_MAX_LENGTH = 50
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -135,7 +136,7 @@ class Report(models.Model):
         related_name='reports'
     )
     reason = models.TextField()
-    status = models.CharField(max_length=50)
+    status = models.CharField(max_length=STATUS_MAX_LENGTH)
     handled_by = models.ForeignKey(
         to=settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

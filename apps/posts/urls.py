@@ -1,5 +1,10 @@
+# Django Modules
 from django.urls import path
+
+# DRF
 from rest_framework.routers import DefaultRouter
+
+# Project Modules
 from .views import PostViewSet, CommentViewSet, LikeViewSet, PostPageListView, PostPageDetailView, PostCreateView, PostListView, PostDetailView
 
 
@@ -32,5 +37,4 @@ urlpatterns = [
     path('api/<uuid:pk>/', PostDetailView.as_view(), name='post-detail'),
 ]
 
-# только для PostViewSet
 urlpatterns += router.urls

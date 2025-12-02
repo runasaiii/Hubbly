@@ -1,22 +1,35 @@
 # Python modules
-from rest_framework import serializers
+from rest_framework.serializers import (
+    ReadOnlyField, 
+    SerializerMethodField,
+    ModelSerializer,
+    ListField,
+    CharField,
+    )
 
 # Project modules
 from .models import Post, Comment, Tag, Like
 
 
-class TagSerializer(serializers.ModelSerializer):
+class TagSerializer(ModelSerializer):
+    """
+    ModelSerializer for TagSerializer
+    """
     class Meta:
         model = Tag
         fields = ['id', 'name']
         read_only_fields = ['id']
 
-class CommentSerializer(serializers.ModelSerializer):
-    author_username = serializers.ReadOnlyField(source='author.username')
-    replies = serializers.SerializerMethodField()
+
+class CommentSerializer(ModelSerializer):
+    """
+    ModelSerializer for CommentSerializer
+    """
+    author_username = ReadOnlyField(source='author.username')
+    replies = SerializerMethodField()
 
     class Meta: 
-        model = Comment
+        model: Comment = Comment
         fields = ['id', 'post', 'author', 'author_username', 'parent', 'content', 'created_at', 'replies']
         read_only_fields = ['id', 'created_at', 'author_username', 'replies','post', 'author']
 
@@ -26,20 +39,23 @@ class CommentSerializer(serializers.ModelSerializer):
         return []
 
 
-class PostSerializer(serializers.ModelSerializer):
-    author_username = serializers.ReadOnlyField(source='author.username')
-    community_slug = serializers.SerializerMethodField()
-    community_name = serializers.SerializerMethodField()
+class PostSerializer(ModelSerializer):
+    """
+    ModelSerializer for PostSerializer
+    """
+    author_username = ReadOnlyField(source='author.username')
+    community_slug = SerializerMethodField()
+    community_name = SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
-    tags_list = serializers.ListField(
-        child=serializers.CharField(max_length=50),
+    tags_list = ListField(
+        child=CharField(max_length=50),
         write_only=True,
         required=False,
         allow_empty=True
     )
-    comments_count = serializers.SerializerMethodField()
-    likes_count = serializers.SerializerMethodField()
-    is_liked = serializers.SerializerMethodField()
+    comments_count = SerializerMethodField()
+    likes_count = SerializerMethodField()
+    is_liked = SerializerMethodField()
 
     class Meta:
         model = Post

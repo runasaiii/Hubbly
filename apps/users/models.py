@@ -1,4 +1,4 @@
-#Python modules
+# Python modules
 from typing import Any
 
 # Django modules
@@ -112,6 +112,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractBaseModel):
     LAST_NAME_MAX_LENGTH = 30
     CITY_MAX_LENGTH = 30
     COUNTRY_MAX_LENGTH = 30
+    PHONE_MAX_LENGTH = 15
+
 
     first_name = CharField(
         max_length = FIRST_NAME_MAX_LENGTH,
@@ -146,7 +148,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractBaseModel):
         help_text='Required. Enter a valid email address.',
         )
     phone_number = CharField(
-        max_length = 15,
+        max_length = PHONE_MAX_LENGTH,
         blank = True,
         verbose_name='phone number',
         help_text='Phone number of the user.',
@@ -271,6 +273,9 @@ class Media(AbstractBaseModel):
     """
     Media model ith common fields.
     """
+    MEDIA_TYPE_MAX_LENGTH = 20
+    TITLE_MAX_LENGTH = 100
+
 
     MEDIA_TYPES = [
         ('image', 'Image'),
@@ -289,7 +294,7 @@ class Media(AbstractBaseModel):
         related_name='medias'
     )
     media_type = models.CharField(
-        max_length=20,
+        max_length=MEDIA_TYPE_MAX_LENGTH,
         choices=MEDIA_TYPES,
         default='image'
     )
@@ -299,7 +304,7 @@ class Media(AbstractBaseModel):
         null=False
     )
     title = models.CharField(
-        max_length=100,
+        max_length=TITLE_MAX_LENGTH,
         blank=True
     )
     description = models.TextField(
