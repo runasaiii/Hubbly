@@ -26,7 +26,6 @@ class Community(AbstractBaseModel):
         editable=False
     )
     name = models.CharField(max_length=MAX_LENGTH)
-    slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
     visibility = models.CharField(
         max_length=10, 

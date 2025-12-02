@@ -9,10 +9,9 @@ from .models import Community, CommunityMembership
 
 @admin.register(Community)
 class CommunityAdmin(ModelAdmin):
-    list_display = ('id', 'name', 'slug', 'visibility', 'owner', 'created_at')
+    list_display = ('id', 'name', 'visibility', 'owner', 'created_at')
     list_filter = ('visibility',)
-    search_fields = ('name', 'slug', 'owner__email', 'owner__username')
-    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'owner__email', 'owner__username')
 
 @admin.register(CommunityMembership)
 class CommunityMembershipAdmin(ModelAdmin):

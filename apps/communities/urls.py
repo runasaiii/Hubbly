@@ -1,9 +1,20 @@
-from django.urls import path
+# Django Modules
+from django.urls import path, include
+
+# Project Modules
 from .views import (
-    CommunityListView, CommunityDetailView,
-    CommunityPageListView, CommunityPageDetailView,
+    CommunityListView,
+    CommunityDetailView,
+    CommunityPageListView,
+    CommunityPageDetailView,
+    CommunityViewSet,
 )
 
+# DRF
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'', CommunityViewSet, basename='community')
 
 urlpatterns = [
     # HTML pages (default)

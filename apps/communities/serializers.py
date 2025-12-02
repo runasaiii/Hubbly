@@ -6,6 +6,10 @@ from .models import Community, CommunityMembership
 
 
 class CommunitySerializer(serializers.ModelSerializer):
+    """
+    ModelSerializer for CommunitySerializer
+    """
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     owner_username = serializers.ReadOnlyField(source='owner.username')
     is_owner = serializers.SerializerMethodField()
     is_member = serializers.SerializerMethodField()
@@ -17,7 +21,6 @@ class CommunitySerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'name',
-            'slug',
             'description',
             'visibility',
             'owner',
@@ -28,7 +31,16 @@ class CommunitySerializer(serializers.ModelSerializer):
             'membership_role',
             'membership_status',
         ]
-        read_only_fields = ['id', 'created_at', 'is_owner', 'is_member', 'membership_role', 'membership_status']
+        read_only_fields = [
+            'id',
+            'created_at',
+            'owner_username',
+            'is_owner',
+            'is_member',
+            'membership_role',
+            'membership_status',
+        ]
+
 
     def get_is_owner(self, obj):
         request = self.context.get('request')
@@ -60,6 +72,9 @@ class CommunitySerializer(serializers.ModelSerializer):
 
 
 class CommunityMembershipSerializer(serializers.ModelSerializer):
+    """
+    ModelSerializer for CommunityMembershipSerializer
+    """
     user_username = serializers.ReadOnlyField(source='user.username')
     community_name = serializers.ReadOnlyField(source='community.name')
 

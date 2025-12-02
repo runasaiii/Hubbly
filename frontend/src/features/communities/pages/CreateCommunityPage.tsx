@@ -51,8 +51,8 @@ export const CreateCommunityPage = () => {
   });
 
   const onSubmit = (data: CommunityFormData) => {
-    createMutation.mutate(data);
-  };
+  createMutation.mutate(data); // не передаём owner и slug
+};
 
   const handleCancel = () => {
     if ((nameValue && nameValue.length > 0) || (descriptionValue && descriptionValue.length > 0)) {
