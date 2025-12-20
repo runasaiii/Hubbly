@@ -5,10 +5,9 @@ from typing import Any
 from django.db.models import Model, DateTimeField
 from django.utils import timezone as django_timezone
 
+
 class AbstractBaseModel(Model):
-    """
-    Abstract base model ith common fields.
-    """
+    """Abstract base model with common fields."""
     created_at = DateTimeField(
         auto_now_add=True
     )

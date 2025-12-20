@@ -10,9 +10,7 @@ from apps.communities.models import Community
 
 
 class Event(models.Model):
-    """
-              Event model ith common fields.
-    """
+    """Event model with common fields."""
     STATUS_MAX_LENGTH = 15
 
     STATUS_CHOICES = [
@@ -59,9 +57,7 @@ class Event(models.Model):
     
 
 class EventApplication(models.Model):
-    """
-     Event application model ith common fields.
-    """
+    """Event application model with common fields."""
     STATUS_MAX_LENGTH = 15
     STATUS_CHOICES = [
         ('applied', 'Applied'),

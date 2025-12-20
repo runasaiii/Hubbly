@@ -6,11 +6,9 @@ from .models import Event, EventApplication
 
 
 class EventSerializer(serializers.ModelSerializer):
-    """
-    ModelSerializer for EventSerializer
-    """
-    organizer_username = serializers.ReadOnlyField(source='organizer.username')
-    community_slug = serializers.ReadOnlyField(source='community.slug')
+    """Serializer for event model"""
+    
+    organizer_username: serializers.ReadOnlyField = serializers.ReadOnlyField(source='organizer.username')
 
     class Meta:
         model = Event
@@ -25,7 +23,6 @@ class EventSerializer(serializers.ModelSerializer):
             'organizer',
             'organizer_username',
             'community',
-            'community_slug',
             'requires_approval',
             'questions',
         ]
@@ -33,11 +30,10 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventApplicationSerializer(serializers.ModelSerializer):
-    """
-    ModelSerializer for EventApplicationSerializer
-    """
-    event_title = serializers.ReadOnlyField(source='event.title')
-    user_username = serializers.ReadOnlyField(source='user.username')
+    """Serializer for EventApplication model"""
+    
+    event_title: serializers.ReadOnlyField = serializers.ReadOnlyField(source='event.title')
+    user_username: serializers.ReadOnlyField = serializers.ReadOnlyField(source='user.username')
 
     class Meta:
         model = EventApplication

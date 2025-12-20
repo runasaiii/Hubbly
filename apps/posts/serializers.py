@@ -1,4 +1,5 @@
 # Python modules
+from typing import Any, Optional
 from rest_framework.serializers import (
     ReadOnlyField, 
     SerializerMethodField,
@@ -12,9 +13,8 @@ from .models import Post, Comment, Tag, Like
 
 
 class TagSerializer(ModelSerializer):
-    """
-    ModelSerializer for TagSerializer
-    """
+    """Serializer for tag model"""
+    
     class Meta:
         model = Tag
         fields = ['id', 'name']
@@ -22,40 +22,38 @@ class TagSerializer(ModelSerializer):
 
 
 class CommentSerializer(ModelSerializer):
-    """
-    ModelSerializer for CommentSerializer
-    """
-    author_username = ReadOnlyField(source='author.username')
-    replies = SerializerMethodField()
+    """Serializer for comment model with nested replies"""
+    
+    author_username: ReadOnlyField = ReadOnlyField(source='author.username')
+    replies: SerializerMethodField = SerializerMethodField()
 
     class Meta: 
-        model: Comment = Comment
+        model = Comment
         fields = ['id', 'post', 'author', 'author_username', 'parent', 'content', 'created_at', 'replies']
         read_only_fields = ['id', 'created_at', 'author_username', 'replies','post', 'author']
 
-    def get_replies(self, obj):
+    def get_replies(self, obj: Comment) -> list[dict[str, Any]]:
+        """Get nested replies for a comment."""
         if obj.replies.exists():
             return CommentSerializer(obj.replies.all(), many=True).data
         return []
 
 
 class PostSerializer(ModelSerializer):
-    """
-    ModelSerializer for PostSerializer
-    """
-    author_username = ReadOnlyField(source='author.username')
-    community_slug = SerializerMethodField()
-    community_name = SerializerMethodField()
-    tags = TagSerializer(many=True, read_only=True)
-    tags_list = ListField(
+    """Serializer for post model with info like tags, comments and likes"""
+    
+    author_username: ReadOnlyField = ReadOnlyField(source='author.username')
+    community_name: SerializerMethodField = SerializerMethodField()
+    tags: TagSerializer = TagSerializer(many=True, read_only=True)
+    tags_list: ListField = ListField(
         child=CharField(max_length=50),
         write_only=True,
         required=False,
         allow_empty=True
     )
-    comments_count = SerializerMethodField()
-    likes_count = SerializerMethodField()
-    is_liked = SerializerMethodField()
+    comments_count: SerializerMethodField = SerializerMethodField()
+    likes_count: SerializerMethodField = SerializerMethodField()
+    is_liked: SerializerMethodField = SerializerMethodField()
 
     class Meta:
         model = Post
@@ -64,7 +62,6 @@ class PostSerializer(ModelSerializer):
             'author',
             'author_username',
             'community',
-            'community_slug',
             'community_name',
             'content',
             'pinned',
@@ -77,29 +74,29 @@ class PostSerializer(ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'author', 'comments_count', 'likes_count', 'is_liked']
 
-    def get_community_slug(self, obj):
-        if obj.community:
-            return obj.community.slug
-        return None
-
-    def get_community_name(self, obj):
+    def get_community_name(self, obj: Post) -> Optional[str]:
+        """Get community name if post belongs to community"""
         if obj.community:
             return obj.community.name
         return None
 
-    def get_comments_count(self, obj):
+    def get_comments_count(self, obj: Post) -> int:
+        """Get total number of comments on the post"""
         return obj.comments.count()
 
-    def get_likes_count(self, obj):
+    def get_likes_count(self, obj: Post) -> int:
+        """Get total number of likes on the post"""
         return obj.likes.count()
 
-    def get_is_liked(self, obj):
+    def get_is_liked(self, obj: Post) -> bool:
+        """Check if current user has liked the post"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.likes.filter(user=request.user).exists()
         return False
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict[str, Any]) -> Post:
+        """Create a new post with tags"""
         tags_list = validated_data.pop('tags_list', [])
         post = super().create(validated_data)
         
@@ -114,7 +111,8 @@ class PostSerializer(ModelSerializer):
         
         return post
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Post, validated_data: dict[str, Any]) -> Post:
+        """Update post and its tags"""
         tags_list = validated_data.pop('tags_list', None)
         post = super().update(instance, validated_data)
         

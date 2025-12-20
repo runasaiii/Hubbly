@@ -28,4 +28,9 @@ class ProfileAdmin(ModelAdmin):
 
 @register(Media)
 class MediaAdmin(ModelAdmin):
-    ...
+    """Admin configuration for media model"""
+    
+    list_display = ('id', 'owner', 'media_type', 'title', 'created_at')
+    list_filter = ('media_type',)
+    search_fields = ('owner__email', 'owner__username', 'title')
+    date_hierarchy = 'created_at'

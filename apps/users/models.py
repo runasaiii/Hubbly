@@ -102,8 +102,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractBaseModel):
-    """
-    Custom User model ith common fields."""
+    """Custom User model with needed fields"""
     EMAIL_MAX_LENGTH = 150
     USERNAME_MAX_LENGTH = 30
     FULL_NAME_MAX_LENGTH = 100
@@ -209,7 +208,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractBaseModel):
         ordering = ('-created_at',)
 
     def clean(self) -> None:
-        """ """
+        """Validate user fields before saving."""
         validate_username_no_special_chars(
             username=self.username,
         )
@@ -218,9 +217,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, AbstractBaseModel):
 
 
 class Profile(models.Model):
-    """
-    Profile model ith common fields.
-    """
+    """Profile model with common fields"""
     MAX_LENGTH = 100
     GENDER_MAX_LENGTH = 10
 
@@ -270,12 +267,10 @@ class Profile(models.Model):
 
 
 class Media(AbstractBaseModel):
-    """
-    Media model ith common fields.
-    """
+    """Media model with common fields."""
+    
     MEDIA_TYPE_MAX_LENGTH = 20
     TITLE_MAX_LENGTH = 100
-
 
     MEDIA_TYPES = [
         ('image', 'Image'),

@@ -6,7 +6,6 @@ from unfold.admin import ModelAdmin
 from .models import Event, EventApplication
 
 
-#register Event App
 @admin.register(Event)
 class EventAdmin(ModelAdmin):
     """
@@ -19,7 +18,7 @@ class EventAdmin(ModelAdmin):
     search_fields = ('title', 'community__name', 'organizer__email', 'organizer__username')
     date_hierarchy = 'start_at'
 
-#register Event Application App
+
 @admin.register(EventApplication)
 class EventApplicationAdmin(ModelAdmin):
     """

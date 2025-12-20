@@ -1,4 +1,4 @@
-# Python moduels
+# Python modules
 import uuid
 
 #Django modules
@@ -11,9 +11,7 @@ from apps.abstracts.models import AbstractBaseModel
 
 
 class Tag(models.Model):
-    """
-     Tag model ith common fields.
-    """
+    """Tag model with common fields"""
     MAX_LENGTH = 50
     id = models.UUIDField(
         primary_key = True, 
@@ -30,9 +28,7 @@ class Tag(models.Model):
 
 
 class Post(AbstractBaseModel):
-    """
-    Post model ith common fields.
-    """
+    """Post model with common fields"""
     id = models.UUIDField(
         primary_key = True,
         default = uuid.uuid4,
@@ -63,9 +59,7 @@ class Post(AbstractBaseModel):
     
 
 class Comment(AbstractBaseModel):
-    """
-    Comment model ith common fields.
-    """
+    """Comment model with common fields"""
     id = models.UUIDField(
         primary_key = True,
         default = uuid.uuid4,
@@ -121,9 +115,7 @@ class Like(models.Model):
 
 
 class Report(models.Model):
-    """
-    Report model ith common fields.
-    """
+    """Report model with common fields"""
     STATUS_MAX_LENGTH = 50
     id = models.UUIDField(
         primary_key=True,

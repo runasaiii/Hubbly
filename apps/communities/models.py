@@ -10,38 +10,39 @@ from apps.abstracts.models import AbstractBaseModel
 
 
 class Community(AbstractBaseModel):
-    """
-        Community model ith common fields.
-    """
+    """Community model with common fields"""
     VISIBILITY_CHOICES = [
         ('public', 'Public'),
         ('private', 'Private'),
         ('secret', 'Secret')
     ]
-
+    COMM_NAME_MAX_LENGTH = 50
     MAX_LENGTH = 100
     id = models.UUIDField(
         primary_key=True, 
         default=uuid.uuid4, 
         editable=False
     )
-    name = models.CharField(max_length=MAX_LENGTH)
+    name = models.CharField(
+        max_length=COMM_NAME_MAX_LENGTH
+        )
     description = models.TextField(blank=True)
     visibility = models.CharField(
-        max_length=10, 
         choices=VISIBILITY_CHOICES, 
         default='public'
     )
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owned_communities')
+    owner = models.ForeignKey(
+        to=settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='owned_communities')
 
     def __str__(self):
         return self.name
     
 
 class CommunityMembership(models.Model):
-    """
-          Community membership model ith common fields.
-    """
+    """Community membership model with common fields"""
+
     ROLE_CHOICES = [
         ('member', 'Member'),
         ('moderator', 'Moderator'),
@@ -52,8 +53,6 @@ class CommunityMembership(models.Model):
         ('active', 'Active'),
         ('banned', 'Banned')
     ]
-
-    MAX_LENGTH = 100
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -70,10 +69,8 @@ class CommunityMembership(models.Model):
         related_name='memberships'
     )
     role = models.CharField(
-        max_length=MAX_LENGTH, 
         choices=ROLE_CHOICES)
-    status = models.CharField(
-        max_length=MAX_LENGTH, 
+    status = models.CharField( 
         choices=STATUS_CHOICES
     )
     joined_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,9 @@
 # Django modules
 from django.urls import path, include
 
+# DRF modules
+from rest_framework.routers import DefaultRouter
+
 # Project modules
 from .views import (
     user_list,
@@ -9,9 +12,6 @@ from .views import (
     UserPageDetailView,
     CustomUserViewSet
 )
-
-# Django Rest Framework modules
-from rest_framework.routers import DefaultRouter
 
 
 router: DefaultRouter = DefaultRouter(
@@ -22,6 +22,7 @@ router.register(
     viewset=CustomUserViewSet,
     basename='user',
 )
+
 urlpatterns = [
     path('', UserPageListView.as_view(), name='user-page-list'),
     path('<int:pk>/', UserPageDetailView.as_view(), name='user-page-detail'),

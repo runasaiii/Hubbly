@@ -78,9 +78,3 @@ class Command(BaseCommand):
         """ Commands entry point. """
         start_time: datetime = datetime.now()
         self.__generate_users(user_count=1000)
-
-        self.stdout.write(
-            "The whole process to generate data took: {} seconds".format(
-                (datetime.now() - start_time).total_seconds()
-            )
-        )

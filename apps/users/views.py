@@ -1,20 +1,20 @@
 # Python modules
 from typing import Any
 
-# Django Rest Framework modules
+# Django modules
+from django.http import HttpResponse, JsonResponse
+from django.views.generic import ListView, DetailView
+
+# DRF modules
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
-
-# Django modules
-from django.http import HttpResponse, JsonResponse
-from django.views.generic import ListView, DetailView
 
 # Project modules
 from .models import CustomUser, Profile
@@ -31,16 +31,21 @@ from .serializers import (
 
 def user_list(request):
     """
-    User List controller
+    User list controller
     """
     users: CustomUser = CustomUser.objects.all()
-    serializer: UserSerializer = UserSerializer(users, many=True)
-    return JsonResponse(serializer.data, safe=False)
+    serializer: UserSerializer = UserSerializer(
+        to=users, 
+        many=True
+        )
+    return JsonResponse(
+        serializer.data, 
+        safe=False)
 
 
 def user_detail(request, user_id):
     """
-    User Detail controller
+    User detail controller
     """
     try:
         user: CustomUser = CustomUser.objects.get(pk=user_id)
@@ -52,7 +57,7 @@ def user_detail(request, user_id):
 
 class UserPageListView(ListView):
     """
-    User Page List View controller
+    User page list view controller
     """
     model: CustomUser = CustomUser
     template_name = 'users/user_list.html'
@@ -61,7 +66,7 @@ class UserPageListView(ListView):
 
 class UserPageDetailView(DetailView):
     """
-    User Page Detail View controller
+    User page detail view controller
     """
     model: CustomUser = CustomUser
     template_name = 'users/user_detail.html'
@@ -70,22 +75,22 @@ class UserPageDetailView(DetailView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
-    Custom Token Obtain Pair View using CustomTokenObtainPairSerializer
+    Custom token obtain pair view using CustomTokenObtainPairSerializer
     """
     serializer_class: CustomTokenObtainPairSerializer = CustomTokenObtainPairSerializer
 
 
 class RegistrationView(generics.CreateAPIView):
     """
-    User Registration View
+    User registration view
     """
     queryset: CustomUser = CustomUser.objects.all()
     serializer_class: RegistrationSerializer = RegistrationSerializer
 
 
 class CustomUserViewSet(ViewSet):
+    """ Creating login endpoints for custom user"""
 
-    """ Creating Login Endpoints for CustomUser"""
     @action(
         methods=('POST',),
         detail=False,
@@ -120,7 +125,7 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    """ Creating Register Endpoints for CustomUser"""
+    """ Creating register endpoints for custom user"""
     @action(
         methods=('POST',),
         detail=False,
@@ -152,7 +157,7 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    """ Creating Personal Account Endpoint """
+    """ Creating personal account endpoint """
     @action(
         methods=('GET',),
         detail=False,
@@ -174,7 +179,7 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    """ Creating Profile Endpoints """
+    """ Creating profile endpoints """
     @action(
         methods=('GET', 'PATCH'),
         detail=False,
@@ -211,7 +216,10 @@ class CustomUserViewSet(ViewSet):
             if 'avatar' in request.FILES:
                 profile.avatar = request.FILES['avatar']
 
-            serializer = ProfileUpdateSerializer(profile, data=data, partial=True)
+            serializer = ProfileUpdateSerializer(
+                to=profile, 
+                data=data, 
+                partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -224,14 +232,20 @@ class CustomUserViewSet(ViewSet):
         url_name='upload_avatar',
         permission_classes=(IsAuthenticated,),
     )
-    def upload_avatar(self, request: DRFRequest, *args, **kwargs) -> DRFResponse:
+    def upload_avatar(
+        self,
+        request: DRFRequest,
+        *args: tuple[Any, ...],
+        **kwargs: dict[str, Any]
+    ) -> DRFResponse:
+        """Upload avatar for user profile."""
         user: CustomUser = request.user
         profile, created = Profile.objects.get_or_create(user=user)
 
         if 'avatar' not in request.FILES:
             return DRFResponse(
                 data={'error': 'No file provided'},
-                status=400
+                status=HTTP_400_BAD_REQUEST
             )
 
         profile.avatar = request.FILES['avatar']
@@ -240,7 +254,7 @@ class CustomUserViewSet(ViewSet):
         serializer = ProfileSerializer(profile)
         return DRFResponse(
             data=serializer.data,
-            status=200
+            status=HTTP_200_OK
         )
 
     @action(
@@ -263,7 +277,7 @@ class CustomUserViewSet(ViewSet):
         except CustomUser.DoesNotExist:
             return DRFResponse(
                 data={'error': 'User not found'},
-                status=404
+                status=HTTP_404_NOT_FOUND
             )
 
         profile, created = Profile.objects.get_or_create(user=target_user)

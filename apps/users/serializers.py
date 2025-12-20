@@ -193,7 +193,7 @@ class UserLoginSerializer(Serializer):
         min_length=CustomUser.PASSWORD_MIN_LENGTH,
     )
     class Meta:
-        """Customization of the Serializer metadata."""
+        """Customization of the Serializer metadata"""
 
         fields = {
             'email',
