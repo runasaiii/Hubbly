@@ -237,31 +237,75 @@ export const PostsListPage = () => {
                 {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex items-center gap-6">
-                    <button 
-                      onClick={(e) => handleLike(post, e)}
-                      disabled={!user || likeMutation.isPending || unlikeMutation.isPending}
-                      className={`flex items-center gap-2 text-sm transition-colors ${
-                        post.is_liked 
-                          ? 'text-red-500' 
-                          : 'text-muted-foreground hover:text-red-500'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      <Heart className={`h-4 w-4 ${post.is_liked ? 'fill-current' : ''}`} />
-                      <span>
-                        {post.likes_count ?? 0} {post.likes_count === 1 ? 'лайк' : 'лайков'}
-                      </span>
-                    </button>
-                    <Link 
-                      to={`/posts/${post.id}`}
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                      <span>
-                        {post.comments_count ?? 0} {post.comments_count === 1 ? 'комментарий' : 'комментариев'}
-                      </span>
-
-
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => handleLike(post, e)}
+                        disabled={!user || likeMutation.isPending || unlikeMutation.isPending}
+                        className={`flex items-center gap-2 text-sm transition-colors ${
+                          post.is_liked 
+                            ? 'text-red-500' 
+                            : 'text-muted-foreground hover:text-red-500'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <Heart className={`h-4 w-4 ${post.is_liked ? 'fill-current' : ''}`} />
+                        <span>
+                          {post.likes_count ?? 0} {post.likes_count === 1 ? 'лайк' : 'лайков'}
+                        </span>
+                      </button>
+                      {post.liked_by && post.liked_by.length > 0 && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <div className="flex -space-x-2">
+                            {post.liked_by.slice(0, 3).map((user: any) => (
+                              <Link
+                                key={user.id}
+                                to={`/profile/${user.id}`}
+                                className="w-6 h-6 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center text-xs font-bold text-white border-2 border-white hover:scale-110 transition-transform"
+                                title={user.username}
+                              >
+                                {user.username?.[0]?.toUpperCase() || 'U'}
+                              </Link>
+                            ))}
+                          </div>
+                          {post.liked_by.length > 3 && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              +{post.liked_by.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link 
+                        to={`/posts/${post.id}`}
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>
+                          {post.comments_count ?? 0} {post.comments_count === 1 ? 'комментарий' : 'комментариев'}
+                        </span>
+                      </Link>
+                      {post.comment_authors && post.comment_authors.length > 0 && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <div className="flex -space-x-2">
+                            {post.comment_authors.slice(0, 3).map((user: any) => (
+                              <Link
+                                key={user.id}
+                                to={`/profile/${user.id}`}
+                                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs font-bold text-white border-2 border-white hover:scale-110 transition-transform"
+                                title={user.username}
+                              >
+                                {user.username?.[0]?.toUpperCase() || 'U'}
+                              </Link>
+                            ))}
+                          </div>
+                          {post.comment_authors.length > 3 && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              +{post.comment_authors.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <Button variant="ghost" size="sm" asChild className="gap-2">

@@ -192,7 +192,7 @@ export const NotificationsPage = () => {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-base">
-                            Уведомление #{notification.id}
+                            {notification.title || `Уведомление`}
                           </p>
                           {isUnread && (
                             <span className="px-2 py-0.5 bg-primary text-primary-foreground text-xs rounded-full font-medium">
@@ -214,7 +214,31 @@ export const NotificationsPage = () => {
                         {notification.type && (
                           <>
                             <span>•</span>
-                            <span className="capitalize">{notification.type}</span>
+                            <span className="capitalize">
+                              {notification.type === 'comment' ? 'Комментарий' :
+                               notification.type === 'like' ? 'Лайк' :
+                               notification.type === 'follow' ? 'Подписка' :
+                               notification.type === 'event' ? 'Событие' :
+                               notification.type === 'community' ? 'Сообщество' :
+                               notification.type === 'post' ? 'Пост' : notification.type}
+                            </span>
+                          </>
+                        )}
+                        {notification.link && (
+                          <>
+                            <span>•</span>
+                            <a 
+                              href={notification.link} 
+                              className="text-primary hover:underline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (notification.link) {
+                                  window.location.href = notification.link;
+                                }
+                              }}
+                            >
+                              Перейти
+                            </a>
                           </>
                         )}
                       </div>

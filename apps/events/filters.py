@@ -2,6 +2,7 @@
 from typing import Any
 
 # Django modules
+from django.db.models import Q
 from django_filters import rest_framework as filters
 
 # Project modules
@@ -28,14 +29,6 @@ class EventFilter(filters.FilterSet):
         field_name='requires_approval', 
         lookup_expr='exact'
         )
-    start_after = filters.DateTimeFilter(
-        field_name='start_at', 
-        lookup_expr='gte'
-        )
-    start_before = filters.DateTimeFilter(
-        field_name='start_at',  
-        lookup_expr='lte'
-        )
     search = filters.CharFilter(method='filter_search')
 
     class Meta:
@@ -46,9 +39,7 @@ class EventFilter(filters.FilterSet):
         """Search in event title and description"""
         if value:
             return queryset.filter(
-                title__icontains=value
-            ) | queryset.filter(
-                description__icontains=value
+                Q(title__icontains=value) | Q(description__icontains=value)
             )
         return queryset
 

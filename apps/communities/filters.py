@@ -2,6 +2,7 @@
 from typing import Any
 
 # Django modules
+from django.db.models import Q
 from django_filters import rest_framework as filters
 
 # Project modules
@@ -18,8 +19,6 @@ class CommunityFilter(filters.FilterSet):
     )
     owner = filters.UUIDFilter(field_name='owner', lookup_expr='exact')
     search = filters.CharFilter(method='filter_search')
-    created_after = filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')
-    created_before = filters.DateTimeFilter(field_name='created_at', lookup_expr='lte')
 
     class Meta:
         model = Community
@@ -29,9 +28,7 @@ class CommunityFilter(filters.FilterSet):
         """Search in community name and description."""
         if value:
             return queryset.filter(
-                name__icontains=value
-            ) | queryset.filter(
-                description__icontains=value
+                Q(name__icontains=value) | Q(description__icontains=value)
             )
         return queryset
 

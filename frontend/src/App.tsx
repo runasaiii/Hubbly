@@ -13,6 +13,7 @@ import { CommunityDetailPage } from './features/communities/pages/CommunityDetai
 import { CreateCommunityPage } from './features/communities/pages/CreateCommunityPage';
 import { EventsListPage } from './features/events/pages/EventsListPage';
 import { EventDetailPage } from './features/events/pages/EventDetailPage';
+import { CreateEventPage } from './features/events/pages/CreateEventPage';
 import { ProfilePage } from './features/users/pages/ProfilePage';
 import { NotificationsPage } from './features/notifications/pages/NotificationsPage';
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="communities/create" element={<CreateCommunityPage />} />
             <Route path="communities/:id" element={<CommunityDetailPage />} />
             <Route path="events" element={<EventsListPage />} />
+            <Route path="events/create" element={<CreateEventPage />} />
             <Route path="events/:id" element={<EventDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/:userId" element={<ProfilePage />} />

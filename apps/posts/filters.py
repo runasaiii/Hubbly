@@ -16,8 +16,6 @@ class PostFilter(filters.FilterSet):
     pinned = filters.BooleanFilter(field_name='pinned', lookup_expr='exact')
     tags = filters.CharFilter(field_name='tags__name', lookup_expr='icontains')
     search = filters.CharFilter(method='filter_search')
-    created_after = filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')
-    created_before = filters.DateTimeFilter(field_name='created_at', lookup_expr='lte')
 
     class Meta:
         model = Post

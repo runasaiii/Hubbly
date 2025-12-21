@@ -2,7 +2,7 @@ import { apiClient } from '@/shared/lib/api';
 import type { Event, EventApplication, CreateEventRequest, ApplyToEventRequest, PaginatedResponse } from '@/shared/types';
 
 export const eventsApi = {
-  list: (params?: { community?: string; status?: string }): Promise<Event[] | PaginatedResponse<Event>> =>
+  list: (params?: { community?: string; status?: string; search?: string; requires_approval?: boolean }): Promise<Event[] | PaginatedResponse<Event>> =>
     apiClient.get('/events/api/', { params }),
 
   get: (id: string): Promise<Event> =>

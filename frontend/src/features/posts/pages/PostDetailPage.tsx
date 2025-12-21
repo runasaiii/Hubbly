@@ -221,32 +221,78 @@ export const PostDetailPage = () => {
 
           {/* Actions Bar */}
           <div className="flex items-center gap-6">
-            <button 
-              onClick={handleLike}
-              disabled={!user || likeMutation.isPending || unlikeMutation.isPending}
-              className={`flex items-center gap-2 text-sm transition-colors group disabled:opacity-50 disabled:cursor-not-allowed ${
-                post.is_liked 
-                  ? 'text-red-500' 
-                  : 'text-muted-foreground hover:text-red-500'
-              }`}
-            >
-              <div className={`p-2 rounded-full transition-colors ${
-                post.is_liked 
-                  ? 'bg-red-50' 
-                  : 'group-hover:bg-red-50'
-              }`}>
-                <Heart className={`h-5 w-5 ${post.is_liked ? 'fill-current' : ''}`} />
-              </div>
-              <span className="font-medium">
-                {post.likes_count ?? 0} {post.likes_count === 1 ? 'лайк' : 'лайков'}
-              </span>
-            </button>
-            <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
-              <div className="p-2 rounded-full group-hover:bg-primary/10 transition-colors">
-                <MessageSquare className="h-5 w-5" />
-              </div>
-              <span className="font-medium">{comments.length} комментариев</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleLike}
+                disabled={!user || likeMutation.isPending || unlikeMutation.isPending}
+                className={`flex items-center gap-2 text-sm transition-colors group disabled:opacity-50 disabled:cursor-not-allowed ${
+                  post.is_liked 
+                    ? 'text-red-500' 
+                    : 'text-muted-foreground hover:text-red-500'
+                }`}
+              >
+                <div className={`p-2 rounded-full transition-colors ${
+                  post.is_liked 
+                    ? 'bg-red-50' 
+                    : 'group-hover:bg-red-50'
+                }`}>
+                  <Heart className={`h-5 w-5 ${post.is_liked ? 'fill-current' : ''}`} />
+                </div>
+                <span className="font-medium">
+                  {post.likes_count ?? 0} {post.likes_count === 1 ? 'лайк' : 'лайков'}
+                </span>
+              </button>
+              {post.liked_by && post.liked_by.length > 0 && (
+                <div className="flex items-center gap-2 ml-2">
+                  <div className="flex -space-x-2">
+                    {post.liked_by.slice(0, 5).map((user: any) => (
+                      <Link
+                        key={user.id}
+                        to={`/profile/${user.id}`}
+                        className="w-7 h-7 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center text-xs font-bold text-white border-2 border-white hover:scale-110 transition-transform"
+                        title={user.username}
+                      >
+                        {user.username?.[0]?.toUpperCase() || 'U'}
+                      </Link>
+                    ))}
+                  </div>
+                  {post.liked_by.length > 5 && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      +{post.liked_by.length - 5}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
+                <div className="p-2 rounded-full group-hover:bg-primary/10 transition-colors">
+                  <MessageSquare className="h-5 w-5" />
+                </div>
+                <span className="font-medium">{comments.length} комментариев</span>
+              </button>
+              {post.comment_authors && post.comment_authors.length > 0 && (
+                <div className="flex items-center gap-2 ml-2">
+                  <div className="flex -space-x-2">
+                    {post.comment_authors.slice(0, 5).map((user: any) => (
+                      <Link
+                        key={user.id}
+                        to={`/profile/${user.id}`}
+                        className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs font-bold text-white border-2 border-white hover:scale-110 transition-transform"
+                        title={user.username}
+                      >
+                        {user.username?.[0]?.toUpperCase() || 'U'}
+                      </Link>
+                    ))}
+                  </div>
+                  {post.comment_authors.length > 5 && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      +{post.comment_authors.length - 5}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

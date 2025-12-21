@@ -19,7 +19,6 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND
 )
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
 
 
 # Project Modules
@@ -29,18 +28,32 @@ from .filters import EventFilter
 
 
 class EventListView(generics.ListCreateAPIView):
-    """Event list view controller"""
+    """Event List View controller."""
     
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     filterset_class = EventFilter
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filter_backends = [DjangoFilterBackend]
     ordering_fields = ['start_at', 'created_at']
     ordering = ['start_at']
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_context(self) -> dict[str, Any]:
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
     
-    def get_queryset(self) -> QuerySet[Event]:
-        """Get queryset with optimizations"""
-        return Event.objects.all().select_related('organizer', 'community')
+    def perform_create(self, serializer: EventSerializer) -> None:
+        """Set organizer to current user when creating event."""
+        serializer.save(organizer=self.request.user)
+
+
+class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Event Detail View controller."""
+    
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
 
     def get_serializer_context(self) -> dict[str, Any]:
         """Add request to serializer context."""
@@ -49,21 +62,8 @@ class EventListView(generics.ListCreateAPIView):
         return context
 
 
-class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Event detail View controller"""
-    
-    queryset = Event.objects.all()
-    serializer_class = EventSerializer
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context"""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
 class EventPageListView(ListView):
-    """Event page list view"""
+    """Event Page List View."""
     
     model = Event
     template_name = 'events/event_list.html'
@@ -72,7 +72,7 @@ class EventPageListView(ListView):
 
 
 class EventPageDetailView(DetailView):
-    """Event page detail view controller"""
+    """Event Page Detail View controller."""
     
     model = Event
     template_name = 'events/event_detail.html'
@@ -80,13 +80,13 @@ class EventPageDetailView(DetailView):
 
 
 class EventViewSet(ViewSet):
-    """ViewSet for handling event related endpoints"""
+    """ViewSet for handling Event-related endpoints."""
     
     permission_classes = (IsAuthenticated,)
     filterset_class = EventFilter
 
     def get_queryset(self) -> QuerySet[Event]:
-        """Get optimized queryset with organizer and annotations"""
+        """Get optimized queryset with organizer and annotations."""
         return (
             Event.objects
             .filter(deleted_at__isnull=True)
@@ -101,7 +101,7 @@ class EventViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Get list of all events with filtering"""
+        """Get list of all events with filtering."""
 
         queryset = self.get_queryset()
         
@@ -130,7 +130,7 @@ class EventViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Create a new event"""
+        """Create a new event."""
 
         serializer: EventSerializer = EventSerializer(
             data=request.data,
@@ -157,7 +157,7 @@ class EventViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Partially update an event"""
+        """Partially update an event."""
 
         try:
             event: Event = self.get_queryset().get(id=kwargs['pk'])
@@ -192,14 +192,14 @@ class EventViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Creating a delete request"""
+        """Creating DELETE request."""
 
         try:
             event: Event = self.get_queryset().get(id=kwargs['pk'])
         except Event.DoesNotExist:
             return DRFResponse(
                 data={
-                    'pk': [f'Event with pk={kwargs["pk"]} does not exist']
+                    'pk': [f'Event with pk={kwargs["pk"]} does not exist.']
                 },
                 status=HTTP_404_NOT_FOUND
             )

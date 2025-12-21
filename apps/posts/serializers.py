@@ -54,6 +54,8 @@ class PostSerializer(ModelSerializer):
     comments_count: SerializerMethodField = SerializerMethodField()
     likes_count: SerializerMethodField = SerializerMethodField()
     is_liked: SerializerMethodField = SerializerMethodField()
+    liked_by: SerializerMethodField = SerializerMethodField()
+    comment_authors: SerializerMethodField = SerializerMethodField()
 
     class Meta:
         model = Post
@@ -71,8 +73,10 @@ class PostSerializer(ModelSerializer):
             'comments_count',
             'likes_count',
             'is_liked',
+            'liked_by',
+            'comment_authors',
         ]
-        read_only_fields = ['id', 'created_at', 'author', 'comments_count', 'likes_count', 'is_liked']
+        read_only_fields = ['id', 'created_at', 'author', 'comments_count', 'likes_count', 'is_liked', 'liked_by', 'comment_authors']
 
     def get_community_name(self, obj: Post) -> Optional[str]:
         """Get community name if post belongs to community"""
@@ -94,6 +98,32 @@ class PostSerializer(ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(user=request.user).exists()
         return False
+
+    def get_liked_by(self, obj: Post) -> list[dict[str, Any]]:
+        """Get list of users who liked the post"""
+        likes = obj.likes.select_related('user').all()[:10]  # Limit to first 10
+        return [
+            {
+                'id': str(like.user.id),
+                'username': like.user.username,
+            }
+            for like in likes
+        ]
+
+    def get_comment_authors(self, obj: Post) -> list[dict[str, Any]]:
+        """Get list of unique users who commented on the post"""
+        comments = obj.comments.select_related('author').all()
+        authors_dict = {}
+        for comment in comments:
+            author_id = str(comment.author.id)
+            if author_id not in authors_dict:
+                authors_dict[author_id] = {
+                    'id': author_id,
+                    'username': comment.author.username,
+                }
+                if len(authors_dict) >= 10:  # Limit to first 10 unique authors
+                    break
+        return list(authors_dict.values())
 
     def create(self, validated_data: dict[str, Any]) -> Post:
         """Create a new post with tags"""

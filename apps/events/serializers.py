@@ -26,7 +26,7 @@ class EventSerializer(serializers.ModelSerializer):
             'requires_approval',
             'questions',
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'organizer', 'organizer_username']
 
 
 class EventApplicationSerializer(serializers.ModelSerializer):

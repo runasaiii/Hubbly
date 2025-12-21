@@ -1,11 +1,8 @@
-# Python Modules
-from typing import Any
-
 #Django modules
 from django.db.models import QuerySet, Count
 from django.views.generic import ListView, DetailView
 
-# DRF
+#DRF
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.request import Request as DRFRequest
@@ -17,32 +14,24 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
 )
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
 
 # App modules
 from .models import Community
 from .serializers import CommunitySerializer
 from .filters import CommunityFilter
 
+# Python Modules
+from typing import Any
+
 
 class CommunityListView(generics.ListCreateAPIView):
-    """Community list View controller"""
+    """Community List View controller."""
+    
     queryset = Community.objects.filter(deleted_at__isnull=True)
     serializer_class = CommunitySerializer
     filterset_class = CommunityFilter
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['created_at', 'name']
     ordering = ['-created_at']
-    
-    def get_queryset(self) -> QuerySet[Community]:
-        """Get queryset with optimizations."""
-        return (
-            Community.objects
-            .filter(deleted_at__isnull=True)
-            .select_related('owner')
-            .prefetch_related('memberships')
-        )
 
     def get_serializer_context(self) -> dict[str, Any]:
         """Add request to serializer context."""
@@ -65,25 +54,28 @@ class CommunityDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CommunityPageListView(ListView):
-    """Community page list View controller"""
+    """Community Page List View controller."""
+    
     model = Community
     template_name = 'communities/community_list.html'
     context_object_name = 'communities'
 
 
 class CommunityPageDetailView(DetailView):
-    """Community page detail View controller"""
+    """Community Page Detail View controller."""
+    
     model = Community
     template_name = 'communities/community_detail.html'
     context_object_name = 'community'
 
 
 class CommunityViewSet(ViewSet):
-    """ViewSet for handling community related endpoints"""
+    """ViewSet for handling Community-related endpoints."""
+    
     filterset_class = CommunityFilter
 
     def get_queryset(self) -> QuerySet[Community]:
-        """Get optimized queryset with owner, memberships and annotations"""
+        """Get optimized queryset with owner, memberships and annotations."""
         return (
             Community.objects
             .filter(deleted_at__isnull=True)
@@ -101,7 +93,7 @@ class CommunityViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Get list of all communities with filtering"""
+        """Get list of all communities with filtering."""
         queryset = self.get_queryset()
         
         filterset = self.filterset_class(request.query_params, queryset=queryset)
@@ -129,7 +121,7 @@ class CommunityViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Create a new community"""
+        """Create a new community."""
 
         serializer: CommunitySerializer = CommunitySerializer(
             data=request.data,
@@ -156,12 +148,12 @@ class CommunityViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Partially update a community"""
+        """Partially update a community."""
         try:
             community: Community = self.get_queryset().get(id=kwargs['pk'])
         except Community.DoesNotExist:
             return DRFResponse(
-                {'detail': 'This community doesnt exist'},
+                {'detail': 'This Community Does Not Exist'},
                 status=HTTP_404_NOT_FOUND
             )
 
@@ -186,12 +178,12 @@ class CommunityViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Delete a community"""
+        """Delete a community."""
         try:
             community: Community = self.get_queryset().get(id=kwargs['pk'])
         except Community.DoesNotExist:
             return DRFResponse(
-                {'detail': 'This community doesnt exist'},
+                {'detail': 'This Community Does Not Exist'},
                 status=HTTP_404_NOT_FOUND
             )
         community.delete()

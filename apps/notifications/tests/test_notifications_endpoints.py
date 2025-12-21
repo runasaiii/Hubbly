@@ -135,3 +135,4 @@ class NotificationEndpointsTests(TestCase):
             self.assertNotIn(str(notification.id), notification_ids)
 
 
+

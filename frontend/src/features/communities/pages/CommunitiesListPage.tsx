@@ -1,8 +1,10 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { communitiesApi } from '@/shared/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import { 
   Users, 
   Sparkles, 
@@ -14,13 +16,33 @@ import {
   Search,
   TrendingUp,
   Crown,
-  Filter
+  Filter,
+  X
 } from 'lucide-react';
 
 export const CommunitiesListPage = () => {
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState<string>('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const { data: communities, isLoading } = useQuery({
-    queryKey: ['communities'],
-    queryFn: () => communitiesApi.list(),
+    queryKey: ['communities', searchQuery, visibilityFilter],
+    queryFn: () => communitiesApi.list({
+      ...(searchQuery && { search: searchQuery }),
+      ...(visibilityFilter && { visibility: visibilityFilter }),
+    }),
+    enabled: true, // Always enabled, but queryKey changes trigger refetch
   });
 
   const communitiesArray = Array.isArray(communities) ? communities : (communities as any)?.results || [];
@@ -90,9 +112,29 @@ export const CommunitiesListPage = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" className="gap-2">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => {
+                setShowSearch(!showSearch);
+                setShowFilters(false);
+              }}
+            >
               <Search className="h-4 w-4" />
               Поиск
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => {
+                setShowFilters(!showFilters);
+                setShowSearch(false);
+              }}
+            >
+              <Filter className="h-4 w-4" />
+              Фильтры
             </Button>
             <Button size="sm" variant="secondary" className="gap-2 shadow-lg" asChild>
               <Link to="/communities/create">
@@ -103,6 +145,70 @@ export const CommunitiesListPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <Card className="border-none shadow-md">
+          <CardContent className="pt-6">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Поиск по названию или описанию..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearchQuery('');
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
+      {showFilters && (
+        <Card className="border-none shadow-md">
+          <CardContent className="pt-6">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Видимость</label>
+                <select
+                  value={visibilityFilter}
+                  onChange={(e) => setVisibilityFilter(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Все</option>
+                  <option value="public">Публичные</option>
+                  <option value="private">Приватные</option>
+                  <option value="secret">Секретные</option>
+                </select>
+              </div>
+              {visibilityFilter && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisibilityFilter('')}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Сбросить
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">

@@ -2,53 +2,56 @@
 from typing import Any
 
 # Django Modules
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, CreateView
 from django.db.models import QuerySet, Count
 from django.shortcuts import redirect
-from django.views.generic import CreateView
 
 # Django Rest Framework Modules
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_204_NO_CONTENT
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
 
 # Project Modules
 from .models import Post, Like, Comment
 from .serializers import PostSerializer, CommentSerializer
 from .filters import PostFilter
 from apps.users.models import CustomUser
+from apps.notifications.models import Notification
 
 
 class PostCreateView(CreateView):
-    """View for creating posts via form"""
+    """View for creating posts via form."""
     
     model = Post
     fields = ['community', 'content', 'pinned', 'tags']
     template_name = 'posts/post_create.html'
 
     def form_valid(self, form: Any) -> Any:
-        """Set author to current user before saving"""
+        """Set author to current user before saving."""
         form.instance.author = self.request.user
         post = form.save()
         return redirect('post-page-detail', pk=post.pk)
 
 
 class PostListView(generics.ListCreateAPIView):
-    """Post list view controller"""
+    """Post List View controller."""
     
     queryset = Post.objects.filter(deleted_at__isnull=True)
     serializer_class = PostSerializer
     filterset_class = PostFilter
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    search_fields = ['content']
     ordering_fields = ['created_at', 'pinned']
     ordering = ['-pinned', '-created_at']
+
+    def get_queryset(self) -> QuerySet[Post]:
+        """Get filtered queryset based on query parameters."""
+        queryset = Post.objects.filter(deleted_at__isnull=True)
+        return queryset
 
     def get_serializer_context(self) -> dict[str, Any]:
         """Add request to serializer context."""
@@ -57,7 +60,7 @@ class PostListView(generics.ListCreateAPIView):
         return context
 
     def perform_create(self, serializer: PostSerializer) -> None:
-        """Set author to current user when creating post"""
+        """Set author to current user when creating post."""
         serializer.save(author=self.request.user)
 
 
@@ -69,7 +72,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
 
     def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context"""
+        """Add request to serializer context."""
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
@@ -95,13 +98,13 @@ class PostPageDetailView(DetailView):
 
 
 class PostViewSet(ViewSet):
-    """ViewSet for handling post related endpoints"""
+    """ViewSet for handling Post-related endpoints."""
     
     permission_classes = (IsAuthenticated,)
     filterset_class = PostFilter
 
     def get_queryset(self) -> QuerySet[Post]:
-        """Get optimized queryset with author, comments, likes and annotations"""
+        """Get optimized queryset with author, comments, likes and annotations."""
         return (
             Post.objects
             .filter(deleted_at__isnull=True)
@@ -119,7 +122,7 @@ class PostViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Get list of posts with filtering"""
+        """Get list of posts with filtering."""
         queryset = self.get_queryset()
         
         filterset = self.filterset_class(request.query_params, queryset=queryset)
@@ -264,7 +267,7 @@ class PostViewSet(ViewSet):
 
 
 class CommentViewSet(ViewSet):
-    """ViewSet for handling comment related endpoints"""
+    """ViewSet for handling Comment-related endpoints."""
     
     permission_classes = [IsAuthenticated]
 
@@ -306,20 +309,34 @@ class CommentViewSet(ViewSet):
         request: DRFRequest,
         post_id: str | None = None
     ) -> DRFResponse:
-        """Create a new comment for a post"""
+        """Create a new comment for a post."""
         post = self.get_post()
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(author=request.user, post=post)
+            comment = serializer.save(author=request.user, post=post)
+            
+            # Create notification for post author if not commenting on own post
+            if post.author.id != request.user.id:
+                Notification.objects.create(
+                    user=post.author,
+                    type='comment',
+                    title='Новый комментарий',
+                    message=f'{request.user.username} оставил(а) комментарий к вашему посту: {comment.content[:50]}{"..." if len(comment.content) > 50 else ""}',
+                    link=f'/posts/{post.id}',
+                    related_object_id=post.id,
+                    related_object_type='post',
+                    is_read=False,
+                )
+            
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class LikeViewSet(ViewSet):
-    """ViewSet for handling like related endpoints"""
+    """ViewSet for handling Like-related endpoints."""
     
     permission_classes = [IsAuthenticated]
 
@@ -341,7 +358,7 @@ class LikeViewSet(ViewSet):
         request: DRFRequest,
         post_id: str | None = None
     ) -> DRFResponse:
-        """Like a post"""
+        """Like a post."""
         post = self.get_post()
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
@@ -354,6 +371,19 @@ class LikeViewSet(ViewSet):
         if not created:
             return Response({'detail': 'Post already liked'}, status=HTTP_400_BAD_REQUEST)
 
+        # Create notification for post author if not liking own post
+        if post.author.id != request.user.id:
+            Notification.objects.create(
+                user=post.author,
+                type='like',
+                title='Ваш пост лайкнули',
+                message=f'{request.user.username} поставил(а) лайк вашему посту',
+                link=f'/posts/{post.id}',
+                related_object_id=post.id,
+                related_object_type='post',
+                is_read=False,
+            )
+
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=HTTP_201_CREATED)
 
@@ -362,7 +392,7 @@ class LikeViewSet(ViewSet):
         request: DRFRequest,
         post_id: str | None = None
     ) -> DRFResponse:
-        """Unlike a post"""
+        """Unlike a post."""
         post = self.get_post()
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)

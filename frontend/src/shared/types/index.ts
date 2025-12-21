@@ -78,6 +78,8 @@ export interface Post extends BaseModel {
   tags: Tag[];
   likes_count?: number;
   is_liked?: boolean;
+  liked_by?: Array<{ id: string; username: string }>;
+  comment_authors?: Array<{ id: string; username: string }>;
 }
 
 export interface Comment extends BaseModel {
@@ -184,6 +186,13 @@ export interface ApplyToEventRequest {
 // Notification types
 export interface Notification extends BaseModel {
   user: string;
+  type?: 'comment' | 'like' | 'follow' | 'event' | 'community' | 'post';
+  title?: string;
+  message: string;
+  is_read?: boolean;
+  link?: string;
+  related_object_id?: string;
+  related_object_type?: string;
 }
 
 // Report types
