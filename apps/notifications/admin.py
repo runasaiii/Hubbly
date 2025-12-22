@@ -8,7 +8,7 @@ from .models import Notification
 @register(Notification)
 class NotificationsAdmin(ModelAdmin):
     """Admin configuration for Notification model."""
-    
+
     list_display = ('id', 'user', 'type', 'title', 'is_read', 'created_at')
     list_filter = ('type', 'is_read', 'created_at')
     search_fields = ('user__email', 'user__username', 'title', 'message')
