@@ -3,10 +3,11 @@ from typing import Any, Optional
 from rest_framework.serializers import (
     ReadOnlyField, 
     SerializerMethodField,
+    Serializer,
     ModelSerializer,
     ListField,
     CharField,
-    )
+)
 
 # Project modules
 from .models import Post, Comment, Tag, Like
@@ -37,6 +38,41 @@ class CommentSerializer(ModelSerializer):
         if obj.replies.exists():
             return CommentSerializer(obj.replies.all(), many=True).data
         return []
+
+
+class CommentNotFoundSerializer(Serializer):
+    """
+        Serializer for HTTP 404 Method Not Allowed response.
+    """
+    detail = CharField()
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+        fields = (
+            "detail",
+        )
+
+
+class CommentResponseSerializer(Serializer):
+    """
+        Serializer for comment errors.
+    """
+    author_username = ListField(
+        child=CharField(),
+        required=False,
+    )
+    parent = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "parent",
+            "author_username",
+        )
 
 
 class PostSerializer(ModelSerializer):
@@ -156,4 +192,39 @@ class PostSerializer(ModelSerializer):
             post.tags.set(tag_objects)
         
         return post
+
+
+class PostNotFoundSerializer(Serializer):
+    """
+        Serializer for HTTP 404 Method Not Allowed response.
+    """
+    detail = CharField()
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+        fields = (
+            "detail",
+        )
+
+
+class PostResponseSerializer(Serializer):
+    """
+        Serializer for comment errors.
+    """
+    author_username = ListField(
+        child=CharField(),
+        required=False,
+    )
+    community_name = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "community_name",
+            "author_username",
+        )
 

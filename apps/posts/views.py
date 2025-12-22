@@ -2,109 +2,48 @@
 from typing import Any
 
 # Django Modules
-from django.views.generic import ListView, DetailView, CreateView
 from django.db.models import QuerySet, Count
-from django.shortcuts import redirect
 
 # Django Rest Framework Modules
-from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_201_CREATED, HTTP_404_NOT_FOUND, HTTP_204_NO_CONTENT
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_201_CREATED,
+    HTTP_404_NOT_FOUND,
+    HTTP_204_NO_CONTENT,
+)
 from rest_framework.response import Response
 
 # Project Modules
 from .models import Post, Like, Comment
-from .serializers import PostSerializer, CommentSerializer
+from .serializers import (
+    PostSerializer,
+    PostNotFoundSerializer,
+    PostResponseSerializer,
+    CommentSerializer,
+    CommentNotFoundSerializer,
+    CommentResponseSerializer,
+)
 from .filters import PostFilter
 from apps.users.models import CustomUser
-from apps.notifications.models import Notification
 
-
-class PostCreateView(CreateView):
-    """View for creating posts via form."""
-    
-    model = Post
-    fields = ['community', 'content', 'pinned', 'tags']
-    template_name = 'posts/post_create.html'
-
-    def form_valid(self, form: Any) -> Any:
-        """Set author to current user before saving."""
-        form.instance.author = self.request.user
-        post = form.save()
-        return redirect('post-page-detail', pk=post.pk)
-
-
-class PostListView(generics.ListCreateAPIView):
-    """Post List View controller."""
-    
-    queryset = Post.objects.filter(deleted_at__isnull=True)
-    serializer_class = PostSerializer
-    filterset_class = PostFilter
-    search_fields = ['content']
-    ordering_fields = ['created_at', 'pinned']
-    ordering = ['-pinned', '-created_at']
-
-    def get_queryset(self) -> QuerySet[Post]:
-        """Get filtered queryset based on query parameters."""
-        queryset = Post.objects.filter(deleted_at__isnull=True)
-        return queryset
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-    def perform_create(self, serializer: PostSerializer) -> None:
-        """Set author to current user when creating post."""
-        serializer.save(author=self.request.user)
-
-
-class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Post Detail View controller
-    """
-    queryset = Post.objects.filter(deleted_at__isnull=True)
-    serializer_class = PostSerializer
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
-class PostPageListView(ListView):
-    """
-    Post Page List View controller
-    """
-    model = Post
-    template_name = 'posts/post_list.html'
-    context_object_name = 'posts'
-    paginate_by = 20
-
-
-class PostPageDetailView(DetailView):
-    """
-    Post Page Detail View
-    """
-    model = Post
-    template_name = 'posts/post_detail.html'
-    context_object_name = 'post'
+# Swagger modules
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class PostViewSet(ViewSet):
-    """ViewSet for handling Post-related endpoints."""
+    """ViewSet for handling post related endpoints"""
     
     permission_classes = (IsAuthenticated,)
     filterset_class = PostFilter
 
     def get_queryset(self) -> QuerySet[Post]:
-        """Get optimized queryset with author, comments, likes and annotations."""
+        """Get optimized queryset with author, comments, likes and annotations"""
         return (
             Post.objects
             .filter(deleted_at__isnull=True)
@@ -116,13 +55,23 @@ class PostViewSet(ViewSet):
             )
         )
 
+
+    @extend_schema(
+        summary="List all posts",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Returns list of top-level posts",
+                response=PostSerializer,
+            )
+        }
+    )
     def list(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Get list of posts with filtering."""
+        """Get list of posts with filtering"""
         queryset = self.get_queryset()
         
         filterset = self.filterset_class(request.query_params, queryset=queryset)
@@ -145,6 +94,15 @@ class PostViewSet(ViewSet):
         )
 
 
+    @extend_schema(
+        summary="Create a Post",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Posts successfully created",
+                response=PostSerializer,
+            ),
+        }
+    )
     def create(
             self,
             request: DRFRequest,
@@ -172,6 +130,53 @@ class PostViewSet(ViewSet):
         )
 
 
+    @extend_schema(
+        summary="Retrieve a single post by ID",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully returns the requested post",
+                response=PostSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Event with this ID does not exist",
+                response=PostNotFoundSerializer,
+            )
+        }
+    )
+    def retrieve(
+            self,
+            request: DRFRequest,
+            pk: str | None = None,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Get single post by ID"""
+        try:
+            post = self.get_queryset().get(pk=pk)
+            serializer = PostSerializer(post, context={'request': request})
+            return DRFResponse(serializer.data, status=HTTP_200_OK)
+        except Post.DoesNotExist:
+            return DRFResponse({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
+
+
+    @extend_schema(
+        summary="Partially update a post",
+        request=PostSerializer,
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Post successfully updated",
+                response=PostSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid data",
+                response= PostResponseSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post with this ID does not exist",
+                response=PostNotFoundSerializer,
+            ),
+        }
+    )
     def partial_update(
             self,
             request: DRFRequest,
@@ -207,6 +212,18 @@ class PostViewSet(ViewSet):
         )
 
 
+    @extend_schema(
+        summary="Delete a post",
+        responses={
+            HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Post successfully deleted"
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post with this ID does not exist",
+                response=PostNotFoundSerializer,
+            ),
+        }
+    )
     def destroy(
             self,
             request: DRFRequest,
@@ -231,6 +248,16 @@ class PostViewSet(ViewSet):
             status=HTTP_204_NO_CONTENT
         )
 
+
+    @extend_schema(
+        summary="Get All User's Posts",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Returns list of top-level posts",
+                response=PostSerializer,
+            )
+        }
+    )
     @action(
         methods=('GET',),
         detail=False,
@@ -267,7 +294,7 @@ class PostViewSet(ViewSet):
 
 
 class CommentViewSet(ViewSet):
-    """ViewSet for handling Comment-related endpoints."""
+    """ViewSet for handling comment related endpoints"""
     
     permission_classes = [IsAuthenticated]
 
@@ -284,6 +311,19 @@ class CommentViewSet(ViewSet):
         except Post.DoesNotExist:
             return None
 
+    @extend_schema(
+        summary="List comments for a post",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Returns list of top-level comments for a post",
+                response=CommentSerializer(many=True)
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post not found",
+                response=CommentNotFoundSerializer,
+            ),
+        }
+    )
     def list(
         self,
         request: DRFRequest,
@@ -304,39 +344,45 @@ class CommentViewSet(ViewSet):
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=HTTP_200_OK)
 
+
+    @extend_schema(
+        summary="Create a comment on a post",
+        request=CommentSerializer,
+        responses={
+            HTTP_201_CREATED: OpenApiResponse(
+                description="Successfully created comment",
+                response=CommentSerializer
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Validation error",
+                response=CommentResponseSerializer,
+
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post not found",
+                response=CommentNotFoundSerializer,
+            ),
+        }
+    )
     def create(
         self,
         request: DRFRequest,
         post_id: str | None = None
     ) -> DRFResponse:
-        """Create a new comment for a post."""
+        """Create a new comment for a post"""
         post = self.get_post()
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            comment = serializer.save(author=request.user, post=post)
-            
-            # Create notification for post author if not commenting on own post
-            if post.author.id != request.user.id:
-                Notification.objects.create(
-                    user=post.author,
-                    type='comment',
-                    title='Новый комментарий',
-                    message=f'{request.user.username} оставил(а) комментарий к вашему посту: {comment.content[:50]}{"..." if len(comment.content) > 50 else ""}',
-                    link=f'/posts/{post.id}',
-                    related_object_id=post.id,
-                    related_object_type='post',
-                    is_read=False,
-                )
-            
+            serializer.save(author=request.user, post=post)
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class LikeViewSet(ViewSet):
-    """ViewSet for handling Like-related endpoints."""
+    """ViewSet for handling like related endpoints"""
     
     permission_classes = [IsAuthenticated]
 
@@ -353,12 +399,30 @@ class LikeViewSet(ViewSet):
         except Post.DoesNotExist:
             return None
 
+
+    @extend_schema(
+        summary="Like a post",
+        responses={
+            HTTP_201_CREATED: OpenApiResponse(
+                description="Post successfully liked",
+                response=PostSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Post already liked",
+                 response=PostResponseSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post not found",
+                response=PostNotFoundSerializer,
+            ),
+        }
+    )
     def create(
         self,
         request: DRFRequest,
         post_id: str | None = None
     ) -> DRFResponse:
-        """Like a post."""
+        """Like a post"""
         post = self.get_post()
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)
@@ -371,28 +435,33 @@ class LikeViewSet(ViewSet):
         if not created:
             return Response({'detail': 'Post already liked'}, status=HTTP_400_BAD_REQUEST)
 
-        # Create notification for post author if not liking own post
-        if post.author.id != request.user.id:
-            Notification.objects.create(
-                user=post.author,
-                type='like',
-                title='Ваш пост лайкнули',
-                message=f'{request.user.username} поставил(а) лайк вашему посту',
-                link=f'/posts/{post.id}',
-                related_object_id=post.id,
-                related_object_type='post',
-                is_read=False,
-            )
-
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=HTTP_201_CREATED)
 
+
+    @extend_schema(
+        summary="Unlike a post",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Post successfully unliked",
+                response=PostSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Post was not liked",
+                response=PostResponseSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post not found",
+                response=PostNotFoundSerializer,
+            ),
+        }
+    )
     def destroy(
         self,
         request: DRFRequest,
         post_id: str | None = None
     ) -> DRFResponse:
-        """Unlike a post."""
+        """Unlike a post"""
         post = self.get_post()
         if not post:
             return Response({'detail': 'Post not found'}, status=HTTP_404_NOT_FOUND)

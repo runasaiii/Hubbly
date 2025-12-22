@@ -3,12 +3,18 @@ from typing import Any, Optional
 
 # DRF modules
 from rest_framework import serializers
+from rest_framework.serializers import (
+    Serializer,
+    ModelSerializer,
+    CharField,
+    ListField,
+)
 
 # Project modules
 from .models import Community, CommunityMembership
 
 
-class CommunitySerializer(serializers.ModelSerializer):
+class CommunitySerializer(ModelSerializer):
     """Serializer for Community model with membership information"""
     
     owner: serializers.HiddenField = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -76,6 +82,21 @@ class CommunitySerializer(serializers.ModelSerializer):
         return None
 
 
+class NotFoundSerializer(Serializer):
+    """
+    Serializer for HTTP 404 Method Not Allowed response.
+    """
+
+    detail = CharField()
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "detail",
+        )
+
+
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     """Serializer for CommunityMembership model"""
     
@@ -97,3 +118,24 @@ class CommunityMembershipSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'joined_at']
 
 
+class CommunityResponseSerializer(Serializer):
+    """
+    Serializer for community errors.
+    """
+
+    title = ListField(
+        child=CharField(),
+        required=False,
+    )
+    organizer_username = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "organizer_username",
+            "title",
+        )

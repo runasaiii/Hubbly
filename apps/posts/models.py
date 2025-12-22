@@ -53,6 +53,9 @@ class Post(AbstractBaseModel):
         related_name = 'posts',
         blank = True
     )
+    class Meta:
+        ordering = ['-pinned', '-created_at']
+
 
     def __str__(self):
         return f"Post by {self.author.username} at {self.created_at}"

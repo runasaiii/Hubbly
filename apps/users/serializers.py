@@ -11,9 +11,8 @@ from rest_framework.serializers import (
     Serializer,
     CharField,
     EmailField,
-    IntegerField,
+    ModelSerializer,
     ListField,
-    ModelSerializer
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -44,34 +43,6 @@ class UserSerializer(ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'date_joined', 'last_login']
-
-
-class UserCreateSerializer(ModelSerializer):
-    """Serializer for creating new users"""
-    class Meta:
-        model = CustomUser
-        fields = [
-            'username',
-            'email',
-            'full_name',
-            'password'
-        ]
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'full_name': {'required': False, 'allow_blank': True}
-        }
-    
-    def create(self, validated_data: dict[str, Any]) -> CustomUser:
-        password = validated_data.pop('password')
-
-        if 'full_name' not in validated_data or not validated_data.get('full_name'):
-            validated_data['full_name'] = validated_data.get('username', '')
-        
-        user: CustomUser = CustomUser.objects.create_user(
-            password=password,
-            **validated_data
-        )
-        return user
 
 
 class ProfileSerializer(ModelSerializer):
@@ -146,7 +117,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['full_name'] = user.full_name
         token['email'] = user.email
         return token
-    
+
 """Serializer for user registration"""
 class RegistrationSerializer(Serializer):
 
@@ -180,6 +151,75 @@ class RegistrationSerializer(Serializer):
 
     def create(self, validated_data: dict[str, Any]) -> CustomUser:
         return CustomUser.objects.create_user(**validated_data)
+
+
+class RegistrationErrorsSerializer(Serializer):
+    """
+        Serializer for user login errors.
+        """
+
+    email = ListField(
+        child=CharField(),
+        required=False,
+    )
+    password = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "email",
+            "password",
+        )
+
+
+class ProfileUpdateErrorsSerializer(Serializer):
+    """
+        Serializer for user login errors.
+        """
+
+    email = ListField(
+        child=CharField(),
+        required=False,
+    )
+    password = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "email",
+            "password",
+        )
+
+
+class UserNotFoundSerializer(Serializer):
+    """
+            Serializer for user login errors.
+            """
+
+    email = ListField(
+        child=CharField(),
+        required=False,
+    )
+    password = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "email",
+            "password",
+        )
 
 
 class UserLoginSerializer(Serializer):
@@ -225,3 +265,41 @@ class UserLoginSerializer(Serializer):
             )
         attrs['user'] = user
         return attrs
+
+
+class UserLoginErrorsSerializer(Serializer):
+    """
+    Serializer for user login errors.
+    """
+
+    email = ListField(
+        child=CharField(),
+        required=False,
+    )
+    password = ListField(
+        child=CharField(),
+        required=False,
+    )
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "email",
+            "password",
+        )
+
+
+class HTTP405MethodNotAllowedSerializer(Serializer):
+    """
+    Serializer for HTTP 405 Method Not Allowed response.
+    """
+
+    detail = CharField()
+
+    class Meta:
+        """Customization of the Serializer metadata."""
+
+        fields = (
+            "detail",
+        )

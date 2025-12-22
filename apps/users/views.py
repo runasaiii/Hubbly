@@ -12,7 +12,14 @@ from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_405_METHOD_NOT_ALLOWED,
+    HTTP_401_UNAUTHORIZED,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 
@@ -21,12 +28,20 @@ from .models import CustomUser, Profile
 from .serializers import (
     UserSerializer,
     CustomTokenObtainPairSerializer,
-    RegistrationSerializer,
-    UserLoginSerializer,
-    UserWithProfileSerializer,
     ProfileSerializer,
     ProfileUpdateSerializer,
+    UserLoginSerializer,
+    RegistrationSerializer,
+    UserWithProfileSerializer,
+    UserLoginErrorsSerializer,
+    HTTP405MethodNotAllowedSerializer,
+    RegistrationErrorsSerializer,
+    ProfileUpdateErrorsSerializer,
+    UserNotFoundSerializer,
 )
+
+# Swagger modules
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 def user_list(request):
@@ -35,11 +50,11 @@ def user_list(request):
     """
     users: CustomUser = CustomUser.objects.all()
     serializer: UserSerializer = UserSerializer(
-        to=users, 
+        to=users,
         many=True
         )
     return JsonResponse(
-        serializer.data, 
+        serializer.data,
         safe=False)
 
 
@@ -55,24 +70,6 @@ def user_detail(request, user_id):
     return JsonResponse(serializer.data)
 
 
-class UserPageListView(ListView):
-    """
-    User page list view controller
-    """
-    model: CustomUser = CustomUser
-    template_name = 'users/user_list.html'
-    context_object_name = 'users'
-
-
-class UserPageDetailView(DetailView):
-    """
-    User page detail view controller
-    """
-    model: CustomUser = CustomUser
-    template_name = 'users/user_detail.html'
-    context_object_name = 'user_obj'
-
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Custom token obtain pair view using CustomTokenObtainPairSerializer
@@ -80,17 +77,28 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class: CustomTokenObtainPairSerializer = CustomTokenObtainPairSerializer
 
 
-class RegistrationView(generics.CreateAPIView):
-    """
-    User registration view
-    """
-    queryset: CustomUser = CustomUser.objects.all()
-    serializer_class: RegistrationSerializer = RegistrationSerializer
-
-
 class CustomUserViewSet(ViewSet):
     """ Creating login endpoints for custom user"""
 
+    @extend_schema(
+        summary="User Login",
+        # description="My custom deprecation reason",
+        request=UserLoginSerializer,
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successful login returns user data along with access and refresh tokens.",
+                response=UserWithProfileSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Bad request due to invalid input data.",
+                response=UserLoginErrorsSerializer,
+            ),
+            HTTP_405_METHOD_NOT_ALLOWED: OpenApiResponse(
+                description="Method not allowed. You used wrong HTTP request type. Only POST can be used to reach this endpoint.",
+                response=HTTP405MethodNotAllowedSerializer,
+            )
+        }
+    )
     @action(
         methods=('POST',),
         detail=False,
@@ -125,7 +133,20 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    """ Creating register endpoints for custom user"""
+    @extend_schema(
+        summary="User Registration",
+        request=RegistrationSerializer,
+        responses={
+            HTTP_201_CREATED: OpenApiResponse(
+                description="User successfully registered.",
+                response=UserWithProfileSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid registration data.",
+                response=RegistrationErrorsSerializer,
+            ),
+        }
+    )
     @action(
         methods=('POST',),
         detail=False,
@@ -157,7 +178,19 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    """ Creating personal account endpoint """
+
+    @extend_schema(
+        summary="Get personal user data",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Return personal user data with profile information.",
+                response=UserWithProfileSerializer,
+            ),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description="Authentication credentials were not provided or invalid.",
+            ),
+        }
+    )
     @action(
         methods=('GET',),
         detail=False,
@@ -179,7 +212,24 @@ class CustomUserViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-    """ Creating profile endpoints """
+
+    @extend_schema(
+        summary="Retrieve or update user profile",
+        request=ProfileUpdateSerializer,  # используется только для PATCH
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Profile retrieved (GET) or updated (PATCH) successfully.",
+                response=ProfileSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid data for updating profile (PATCH).",
+                response=ProfileUpdateErrorsSerializer,
+            ),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description="Authentication required.",
+            ),
+        }
+    )
     @action(
         methods=('GET', 'PATCH'),
         detail=False,
@@ -225,6 +275,22 @@ class CustomUserViewSet(ViewSet):
 
             return DRFResponse(ProfileSerializer(profile).data, status=HTTP_200_OK)
 
+
+    @extend_schema(
+        summary="Upload user avatar",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Avatar uploaded successfully.",
+                response=ProfileSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="No avatar file provided.",
+            ),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description="Authentication required.",
+            ),
+        }
+    )
     @action(
         methods=('POST',),
         detail=False,
@@ -256,6 +322,7 @@ class CustomUserViewSet(ViewSet):
             data=serializer.data,
             status=HTTP_200_OK
         )
+
 
     @action(
         methods=('GET',),

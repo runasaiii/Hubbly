@@ -18,75 +18,29 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND
 )
-from django_filters.rest_framework import DjangoFilterBackend
-
 
 # Project Modules
 from .models import Event
-from .serializers import EventSerializer
+from .serializers import (
+    EventSerializer,
+    EventNotFoundSerializer,
+    EventResponseSerializer,
+)
 from .filters import EventFilter
 
-
-class EventListView(generics.ListCreateAPIView):
-    """Event List View controller."""
-    
-    queryset = Event.objects.all()
-    serializer_class = EventSerializer
-    filterset_class = EventFilter
-    filter_backends = [DjangoFilterBackend]
-    ordering_fields = ['start_at', 'created_at']
-    ordering = ['start_at']
-    permission_classes = [IsAuthenticated]
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-    
-    def perform_create(self, serializer: EventSerializer) -> None:
-        """Set organizer to current user when creating event."""
-        serializer.save(organizer=self.request.user)
-
-
-class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Event Detail View controller."""
-    
-    queryset = Event.objects.all()
-    serializer_class = EventSerializer
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
-class EventPageListView(ListView):
-    """Event Page List View."""
-    
-    model = Event
-    template_name = 'events/event_list.html'
-    context_object_name = 'events'
-    paginate_by = 20
-
-
-class EventPageDetailView(DetailView):
-    """Event Page Detail View controller."""
-    
-    model = Event
-    template_name = 'events/event_detail.html'
-    context_object_name = 'event'
+# Swagger modules
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class EventViewSet(ViewSet):
-    """ViewSet for handling Event-related endpoints."""
+    """ViewSet for handling event related endpoints"""
     
     permission_classes = (IsAuthenticated,)
+    serializer_class = EventSerializer
     filterset_class = EventFilter
 
     def get_queryset(self) -> QuerySet[Event]:
-        """Get optimized queryset with organizer and annotations."""
+        """Get optimized queryset with organizer and annotations"""
         return (
             Event.objects
             .filter(deleted_at__isnull=True)
@@ -95,13 +49,24 @@ class EventViewSet(ViewSet):
                 applications_count=Count('applications', distinct=True)
             )
         )
+
+
+    @extend_schema(
+        summary="List all events",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully returns list of events",
+                response=EventSerializer(many=True)
+            ),
+        }
+    )
     def list(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Get list of all events with filtering."""
+        """Get list of all events with filtering"""
 
         queryset = self.get_queryset()
         
@@ -124,13 +89,26 @@ class EventViewSet(ViewSet):
         )
 
 
+    @extend_schema(
+        summary="Create a new event",
+        responses={
+            HTTP_201_CREATED: OpenApiResponse(
+                description="Event successfully created",
+                response=EventSerializer
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid input data",
+                response=EventResponseSerializer,
+            ),
+        }
+    )
     def create(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Create a new event."""
+        """Create a new event"""
 
         serializer: EventSerializer = EventSerializer(
             data=request.data,
@@ -151,16 +129,29 @@ class EventViewSet(ViewSet):
         )
 
 
+    @extend_schema(
+        summary="Partially update an event",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Event successfully updated",
+                response=EventSerializer
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Event with this ID does not exist",
+                response=EventNotFoundSerializer
+            ),
+        }
+    )
     def partial_update(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Partially update an event."""
+        """Partially update an event"""
 
         try:
-            event: Event = self.get_queryset().get(id=kwargs['pk'])
+            event: Event = self.get_queryset().get(id=kwargs['id'])
         except Event.DoesNotExist:
             return DRFResponse(
                 data={
@@ -186,20 +177,32 @@ class EventViewSet(ViewSet):
         )
 
 
+    @extend_schema(
+        summary="Delete an event",
+        responses={
+            HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Event successfully deleted"
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Event with this ID does not exist",
+                response=EventNotFoundSerializer,
+            ),
+        }
+    )
     def destroy(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Creating DELETE request."""
+        """Creating a delete request"""
 
         try:
-            event: Event = self.get_queryset().get(id=kwargs['pk'])
+            event: Event = self.get_queryset().get(id=kwargs['id'])
         except Event.DoesNotExist:
             return DRFResponse(
                 data={
-                    'pk': [f'Event with pk={kwargs["pk"]} does not exist.']
+                    'pk': [f'Event with pk={kwargs["pk"]} does not exist']
                 },
                 status=HTTP_404_NOT_FOUND
             )
@@ -209,3 +212,44 @@ class EventViewSet(ViewSet):
         return DRFResponse(
             status=HTTP_204_NO_CONTENT
         )
+
+
+    @extend_schema(
+        summary="Retrieve a single event by ID",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully returns the requested event",
+                response=EventSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Event with this ID does not exist",
+                response=EventNotFoundSerializer,
+            ),
+        }
+    )
+    def retrieve(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Get single event by id"""
+
+        try:
+            event: Event = self.get_queryset().get(id=kwargs['id'])
+        except Event.DoesNotExist:
+            return DRFResponse(
+                data={'detail': f'Event with id={kwargs["id"]} does not exist'},
+                status=HTTP_404_NOT_FOUND
+            )
+
+        serializer: EventSerializer = EventSerializer(
+            event,
+            context={'request': request}
+        )
+
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_200_OK
+        )
+

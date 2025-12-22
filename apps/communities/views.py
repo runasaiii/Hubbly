@@ -1,8 +1,12 @@
+# Python Modules
+from http.client import responses
+from typing import Any
+
 #Django modules
 from django.db.models import QuerySet, Count
 from django.views.generic import ListView, DetailView
 
-#DRF
+# DRF
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
 from rest_framework.request import Request as DRFRequest
@@ -14,68 +18,56 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
 )
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 
 # App modules
 from .models import Community
-from .serializers import CommunitySerializer
+from .serializers import (
+    CommunitySerializer,
+    NotFoundSerializer,
+    CommunityResponseSerializer,
+)
 from .filters import CommunityFilter
 
-# Python Modules
-from typing import Any
-
-
-class CommunityListView(generics.ListCreateAPIView):
-    """Community List View controller."""
-    
-    queryset = Community.objects.filter(deleted_at__isnull=True)
-    serializer_class = CommunitySerializer
-    filterset_class = CommunityFilter
-    ordering_fields = ['created_at', 'name']
-    ordering = ['-created_at']
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
-class CommunityDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Community Detail View controller."""
-    
-    queryset = Community.objects.all()
-    serializer_class = CommunitySerializer
-
-    def get_serializer_context(self) -> dict[str, Any]:
-        """Add request to serializer context."""
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
-class CommunityPageListView(ListView):
-    """Community Page List View controller."""
-    
-    model = Community
-    template_name = 'communities/community_list.html'
-    context_object_name = 'communities'
-
-
-class CommunityPageDetailView(DetailView):
-    """Community Page Detail View controller."""
-    
-    model = Community
-    template_name = 'communities/community_detail.html'
-    context_object_name = 'community'
+# Swagger modules
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 
 class CommunityViewSet(ViewSet):
-    """ViewSet for handling Community-related endpoints."""
-    
+
+    """ViewSet for handling community related endpoints"""
     filterset_class = CommunityFilter
 
+    @extend_schema(
+        summary="Get a specific community by ID",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully returns the requested community",
+                response=CommunitySerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Community with this ID does not exist",
+                response=NotFoundSerializer,
+            ),
+        }
+    )
+    def retrieve(self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    )-> DRFResponse:
+        """GET /api/communities/<pk>/"""
+        try:
+            community = self.get_queryset().get(id=kwargs['pk'])
+        except Community.DoesNotExist:
+            return DRFResponse({'detail': 'Community not found'}, status=HTTP_404_NOT_FOUND)
+
+        serializer = CommunitySerializer(community, context={'request': request})
+        return DRFResponse(serializer.data, status=HTTP_200_OK)
+
     def get_queryset(self) -> QuerySet[Community]:
-        """Get optimized queryset with owner, memberships and annotations."""
+        """Get optimized queryset with owner, memberships and annotations"""
         return (
             Community.objects
             .filter(deleted_at__isnull=True)
@@ -86,14 +78,22 @@ class CommunityViewSet(ViewSet):
             )
         )
 
-
+    @extend_schema(
+        summary="List all communities with optional filtering and ordering",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully returns a list of communities",
+                response=CommunitySerializer(many=True),
+            ),
+        }
+    )
     def list(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Get list of all communities with filtering."""
+        """Get list of all communities with filtering"""
         queryset = self.get_queryset()
         
         filterset = self.filterset_class(request.query_params, queryset=queryset)
@@ -114,14 +114,27 @@ class CommunityViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-
+    @extend_schema(
+        summary="Create a new community",
+        request=CommunitySerializer,
+        responses={
+            HTTP_201_CREATED: OpenApiResponse(
+                description="Community created successfully",
+                response=CommunitySerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid input data",
+                response=CommunityResponseSerializer,
+            ),
+        }
+    )
     def create(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Create a new community."""
+        """Create a new community"""
 
         serializer: CommunitySerializer = CommunitySerializer(
             data=request.data,
@@ -141,19 +154,36 @@ class CommunityViewSet(ViewSet):
             status=HTTP_201_CREATED
         )
 
-
+    @extend_schema(
+        summary="Partially update a community",
+        request=CommunitySerializer,
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Community updated successfully",
+                response=CommunitySerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Community not found",
+                response=NotFoundSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid input data",
+                response=CommunitySerializer,
+            ),
+        }
+    )
     def partial_update(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Partially update a community."""
+        """Partially update a community"""
         try:
             community: Community = self.get_queryset().get(id=kwargs['pk'])
         except Community.DoesNotExist:
             return DRFResponse(
-                {'detail': 'This Community Does Not Exist'},
+                {'detail': 'This community doesnt exist'},
                 status=HTTP_404_NOT_FOUND
             )
 
@@ -171,19 +201,30 @@ class CommunityViewSet(ViewSet):
             status=HTTP_200_OK
         )
 
-
+    @extend_schema(
+        summary="Delete a community",
+        responses={
+            HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Community deleted successfully",
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Community not found",
+                response=NotFoundSerializer,
+            ),
+        }
+    )
     def destroy(
             self,
             request: DRFRequest,
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Delete a community."""
+        """Delete a community"""
         try:
             community: Community = self.get_queryset().get(id=kwargs['pk'])
         except Community.DoesNotExist:
             return DRFResponse(
-                {'detail': 'This Community Does Not Exist'},
+                {'detail': 'This community doesnt exist'},
                 status=HTTP_404_NOT_FOUND
             )
         community.delete()
