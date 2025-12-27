@@ -14,7 +14,6 @@ router = DefaultRouter()
 router.register(r'api', CommunityViewSet, basename='community')
 
 urlpatterns = [
-    # rest api
     path('', include(router.urls)),
 ]
 

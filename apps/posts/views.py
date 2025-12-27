@@ -220,14 +220,12 @@ class PostViewSet(ViewSet):
                 status=HTTP_404_NOT_FOUND
             )
 
-        # Check if user is the author
         if post.author != request.user:
             return DRFResponse(
                 data={'detail': 'You can only edit your own posts'},
                 status=HTTP_403_FORBIDDEN
             )
 
-        # Check if post can still be edited (time limit)
         if not post.can_be_edited():
             return DRFResponse(
                 data={
@@ -246,7 +244,6 @@ class PostViewSet(ViewSet):
 
         serializer.is_valid(raise_exception=True)
 
-        # Update edited_at timestamp
         from django.utils import timezone
         post.edited_at = timezone.now()
         post.save(update_fields=['edited_at', 'content'])
@@ -282,8 +279,7 @@ class PostViewSet(ViewSet):
             *args: tuple[Any, ...],
             **kwargs: dict[str, Any],
     ) -> DRFResponse:
-        """Creating PUT request - uses partial_update logic"""
-        # PUT и PATCH обрабатываются одинаково (частичное обновление)
+        """Creating put request which uses partial_update logic"""
         return self.partial_update(request, *args, **kwargs)
 
     @extend_schema(

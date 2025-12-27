@@ -83,7 +83,6 @@ class CommunityViewSet(ViewSet):
     def get_queryset(self) -> QuerySet[Community]:
         """Get optimized queryset with owner, memberships and annotations"""
         from apps.posts.models import Post
-        # Count active members + owner (owner is always counted as member)
         return (
             Community.objects
             .filter(deleted_at__isnull=True)

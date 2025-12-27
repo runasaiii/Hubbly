@@ -10,7 +10,8 @@ from apps.communities.models import Community
 
 
 class Event(models.Model):
-    """Event model with common fields."""
+    """Event model with common fields"""
+
     STATUS_MAX_LENGTH = 15
 
     STATUS_CHOICES = [

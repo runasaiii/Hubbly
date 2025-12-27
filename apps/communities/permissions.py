@@ -4,8 +4,8 @@ from .models import Community
 
 class IsCommunityOwner(BasePermission):
     """
-    Разрешает изменение и удаление
-    только владельцу сообщества
+    Allows editing and deletion
+    Only by the community owner
     """
 
     def has_object_permission(self, request, view, obj: Community) -> bool:

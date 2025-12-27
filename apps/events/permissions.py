@@ -10,7 +10,6 @@ class IsEventOrganizer(BasePermission):
     """
 
     def has_object_permission(self, request: Request, view, obj: Event) -> bool:
-        # SAFE_METHODS = GET, HEAD, OPTIONS
         if request.method in SAFE_METHODS:
             return True
 
