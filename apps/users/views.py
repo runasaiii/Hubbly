@@ -82,6 +82,7 @@ class CustomUserViewSet(ViewSet):
 
     @extend_schema(
         summary="User Login",
+        # description="My custom deprecation reason",
         request=UserLoginSerializer,
         responses={
             HTTP_200_OK: OpenApiResponse(
@@ -255,7 +256,7 @@ class CustomUserViewSet(ViewSet):
         elif request.method == 'PATCH':
             data = request.data.copy()
 
-        
+
             if 'interests' in data:
                 if isinstance(data['interests'], str):
                     import json
@@ -272,8 +273,8 @@ class CustomUserViewSet(ViewSet):
                 profile.save(update_fields=['avatar'])
 
             serializer = ProfileUpdateSerializer(
-                instance=profile, 
-                data=data, 
+                instance=profile,
+                data=data,
                 partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
