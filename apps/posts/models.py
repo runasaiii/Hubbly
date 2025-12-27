@@ -1,9 +1,11 @@
 # Python modules
 import uuid
+from datetime import timedelta
 
 #Django modules
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 #App modules
 from apps.communities.models import Community
@@ -48,13 +50,25 @@ class Post(AbstractBaseModel):
     )
     content = models.TextField()
     pinned = models.BooleanField(default = False)
+    edited_at = models.DateTimeField(null=True, blank=True)
     tags = models.ManyToManyField(
         to = Tag,
         related_name = 'posts',
         blank = True
     )
+    
+    # Time limit for editing (30 minutes)
+    EDIT_TIME_LIMIT_MINUTES = 30
+    
     class Meta:
         ordering = ['-pinned', '-created_at']
+    
+    def can_be_edited(self) -> bool:
+        """Check if post can still be edited (within time limit)"""
+        if not self.created_at:
+            return False
+        time_since_creation = timezone.now() - self.created_at
+        return time_since_creation <= timedelta(minutes=self.EDIT_TIME_LIMIT_MINUTES)
 
 
     def __str__(self):

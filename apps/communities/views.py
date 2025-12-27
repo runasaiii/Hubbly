@@ -3,12 +3,14 @@ from http.client import responses
 from typing import Any
 
 #Django modules
-from django.db.models import QuerySet, Count
+from django.db.models import QuerySet, Count, Q
 from django.views.generic import ListView, DetailView
 
 # DRF
 from rest_framework import generics
 from rest_framework.viewsets import ViewSet
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request as DRFRequest
 from rest_framework.response import Response as DRFResponse
 from rest_framework.status import (
@@ -22,11 +24,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
 # App modules
-from .models import Community
+from .models import Community, CommunityMembership
 from .serializers import (
     CommunitySerializer,
     NotFoundSerializer,
     CommunityResponseSerializer,
+    CommunityMembershipSerializer,
 )
 from .filters import CommunityFilter
 
@@ -68,13 +71,16 @@ class CommunityViewSet(ViewSet):
 
     def get_queryset(self) -> QuerySet[Community]:
         """Get optimized queryset with owner, memberships and annotations"""
+        from apps.posts.models import Post
+        # Count active members + owner (owner is always counted as member)
         return (
             Community.objects
             .filter(deleted_at__isnull=True)
             .select_related('owner')
-            .prefetch_related('memberships')
+            .prefetch_related('memberships', 'posts')
             .annotate(
-                users_count=Count('memberships', distinct=True)
+                active_members_count=Count('memberships', filter=Q(memberships__status='active'), distinct=True),
+                posts_count=Count('posts', filter=Q(posts__deleted_at__isnull=True), distinct=True)
             )
         )
 
@@ -147,7 +153,7 @@ class CommunityViewSet(ViewSet):
                 status=HTTP_400_BAD_REQUEST
             )
 
-        serializer.save()
+        serializer.save(owner=request.user)
 
         return DRFResponse(
             data=serializer.data,
@@ -232,3 +238,198 @@ class CommunityViewSet(ViewSet):
         return DRFResponse(
             status=HTTP_204_NO_CONTENT
         )
+
+    @extend_schema(
+        summary="Join a community",
+        responses={
+            HTTP_201_CREATED: OpenApiResponse(
+                description="Successfully joined the community",
+                response=CommunityMembershipSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Already a member or invalid request",
+                response=CommunityResponseSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Community not found",
+                response=NotFoundSerializer,
+            ),
+        }
+    )
+    @action(
+        methods=['POST'],
+        detail=True,
+        url_path='join',
+        permission_classes=[IsAuthenticated],
+    )
+    def join(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Join a community - creates membership with appropriate status"""
+        try:
+            community: Community = self.get_queryset().get(id=kwargs['pk'])
+        except Community.DoesNotExist:
+            return DRFResponse(
+                {'detail': 'Community not found'},
+                status=HTTP_404_NOT_FOUND
+            )
+
+        existing_membership = CommunityMembership.objects.filter(
+            user=request.user,
+            community=community
+        ).first()
+
+        if existing_membership:
+            return DRFResponse(
+                {'detail': 'You are already a member of this community'},
+                status=HTTP_400_BAD_REQUEST
+            )
+
+        if community.owner == request.user:
+            return DRFResponse(
+                {'detail': 'You are the owner of this community'},
+                status=HTTP_400_BAD_REQUEST
+            )
+
+
+        if community.visibility == 'public':
+            status = 'active'
+        else:
+            status = 'pending'
+
+        membership = CommunityMembership.objects.create(
+            user=request.user,
+            community=community,
+            role='member',
+            status=status
+        )
+
+        serializer = CommunityMembershipSerializer(membership)
+        return DRFResponse(
+            data=serializer.data,
+            status=HTTP_201_CREATED
+        )
+
+    @extend_schema(
+        summary="Get community members",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully returns list of community members",
+                response=CommunityMembershipSerializer(many=True),
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Community not found",
+                response=NotFoundSerializer,
+            ),
+        }
+    )
+    @action(
+        methods=['GET'],
+        detail=True,
+        url_path='members',
+        permission_classes=[IsAuthenticated],
+    )
+    def members(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Get list of community members including owner"""
+        try:
+            community: Community = self.get_queryset().get(id=kwargs['pk'])
+        except Community.DoesNotExist:
+            return DRFResponse(
+                {'detail': 'Community not found'},
+                status=HTTP_404_NOT_FOUND
+            )
+
+        memberships = CommunityMembership.objects.filter(
+            community=community,
+            status='active'
+        ).select_related('user').order_by('joined_at')
+
+        membership_serializer = CommunityMembershipSerializer(memberships, many=True)
+        members_list = list(membership_serializer.data)
+
+        owner_in_members = any(m['user'] == str(community.owner.id) for m in members_list)
+        if not owner_in_members:
+            owner_membership_data = {
+                'id': str(community.owner.id),
+                'user': str(community.owner.id),
+                'user_username': community.owner.username,
+                'community': str(community.id),
+                'community_name': community.name,
+                'role': 'organizer', 
+                'status': 'active',
+                'joined_at': community.created_at.isoformat() if hasattr(community, 'created_at') and community.created_at else None,
+            }
+            members_list.insert(0, owner_membership_data)
+
+        return DRFResponse(
+            data=members_list,
+            status=HTTP_200_OK
+        )
+
+    @extend_schema(
+        summary="Leave a community",
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Successfully left the community",
+                response=CommunityResponseSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Not a member or cannot leave",
+                response=CommunityResponseSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Community not found",
+                response=NotFoundSerializer,
+            ),
+        }
+    )
+    @action(
+        methods=['POST'],
+        detail=True,
+        url_path='leave',
+        permission_classes=[IsAuthenticated],
+    )
+    def leave(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Leave a community - removes membership"""
+        try:
+            community: Community = self.get_queryset().get(id=kwargs['pk'])
+        except Community.DoesNotExist:
+            return DRFResponse(
+                {'detail': 'Community not found'},
+                status=HTTP_404_NOT_FOUND
+            )
+
+        if community.owner == request.user:
+            return DRFResponse(
+                {'detail': 'Community owner cannot leave the community'},
+                status=HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            membership = CommunityMembership.objects.get(
+                user=request.user,
+                community=community
+            )
+            membership.delete()
+            return DRFResponse(
+                {'detail': 'Successfully left the community'},
+                status=HTTP_200_OK
+            )
+        except CommunityMembership.DoesNotExist:
+            return DRFResponse(
+                {'detail': 'You are not a member of this community'},
+                status=HTTP_400_BAD_REQUEST
+            )

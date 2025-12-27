@@ -43,13 +43,11 @@ export const CreatePostPage = () => {
   const contentValue = watch('content', '');
   const selectedCommunity = watch('community', '');
   
-  // Загрузка сообществ
   const { data: communitiesData, isLoading: communitiesLoading } = useQuery({
     queryKey: ['communities'],
     queryFn: () => communitiesApi.list(),
   });
 
-  // Устанавливаем сообщество из URL при загрузке
   useEffect(() => {
     if (communityFromUrl) {
       setValue('community', communityFromUrl);
@@ -60,17 +58,14 @@ export const CreatePostPage = () => {
     ? communitiesData 
     : (communitiesData as any)?.results || [];
 
-  // Фильтруем только публичные сообщества или те, где пользователь является владельцем или членом
+
   const availableCommunities = communitiesArray.filter((c: any) => 
-    c.visibility === 'public' || c.owner === user?.id || c.is_member
+    c.is_owner === true
   );
   
-  // Update character count
   useEffect(() => {
     setCharCount(contentValue?.length || 0);
   }, [contentValue]);
-
-  // Обновляем теги в форме
   useEffect(() => {
     setValue('tags', tags);
   }, [tags, setValue]);
@@ -79,6 +74,9 @@ export const CreatePostPage = () => {
     mutationFn: postsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['user-posts', user.id] });
+      }
       navigate('/posts');
     },
   });
@@ -107,12 +105,10 @@ export const CreatePostPage = () => {
       content: data.content,
     };
     
-    // Добавляем community только если оно выбрано
     if (data.community && data.community.trim() !== '') {
       submitData.community = data.community;
     }
     
-    // Добавляем теги только если они есть
     if (tags.length > 0) {
       submitData.tags_list = tags;
     }
@@ -189,22 +185,40 @@ export const CreatePostPage = () => {
                     disabled={communitiesLoading}
                     className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">Личный пост (без сообщества)</option>
+                    <option value="">👤 От моего имени (личный пост)</option>
                     {communitiesLoading ? (
                       <option disabled>Загрузка сообществ...</option>
+                    ) : availableCommunities.length === 0 ? (
+                      <option disabled>У вас нет сообществ для публикации</option>
                     ) : (
                       availableCommunities.map((community: any) => (
                         <option key={community.id} value={community.id}>
-                          {community.name} {community.visibility === 'public' ? '(Публичное)' : community.visibility === 'private' ? '(Приватное)' : '(Секретное)'}
+                          🏘️ {community.name} {community.visibility === 'public' ? '(Публичное)' : community.visibility === 'private' ? '(Приватное)' : '(Секретное)'}
                         </option>
                       ))
                     )}
                   </select>
                 )}
               />
-              <p className="text-xs text-muted-foreground">
-                Выберите сообщество, чтобы опубликовать пост от его имени. Оставьте пустым для личного поста.
-              </p>
+              <div className="space-y-2">
+                {selectedCommunity ? (
+                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      📌 Пост будет опубликован от имени выбранного сообщества. Только владелец может создавать посты от имени сообщества.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                    <p className="text-sm text-green-800">
+                      ✅ Пост будет опубликован от вашего имени как личный пост.
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Выберите сообщество, чтобы опубликовать пост от его имени (только ваши сообщества, где вы владелец). 
+                  Оставьте пустым для личного поста от вашего имени.
+                </p>
+              </div>
             </div>
 
             {/* Content Field */}

@@ -84,7 +84,6 @@ export const ProfilePage = () => {
         console.log('Loading other user profile:', userId);
         try {
           const result = await usersApi.getUserProfile(userId);
-          // Normalize interests from API response
           if (result.profile.interests) {
             if (Array.isArray(result.profile.interests)) {
               result.profile.interests = result.profile.interests.map(i => typeof i === 'string' ? i : String(i));
@@ -105,16 +104,15 @@ export const ProfilePage = () => {
     },
     enabled: !userId ? (!authLoading && !!currentUser) : !authLoading, // Wait for auth to finish loading
     retry: 1,
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 30000,
   });
 
   const profile = profileData?.profile;
   const user = profileData?.user || currentUser;
   const isOwnProfile = !userId || (currentUser && userId === currentUser.id);
 
-  // Load user posts - use user from profileData if available
   const targetUserId = userId || user?.id || currentUser?.id;
-  const { data: userPosts = [], isLoading: postsLoading } = useQuery({
+  const { data: userPosts = [], isLoading: postsLoading, refetch: refetchPosts } = useQuery({
     queryKey: ['user-posts', targetUserId],
     queryFn: () => {
       if (!targetUserId) {
@@ -122,11 +120,16 @@ export const ProfilePage = () => {
       }
       return postsApi.getUserPosts(targetUserId);
     },
-    enabled: !!targetUserId && !!user, // Wait for user to be loaded
+    enabled: !!targetUserId, // Enable when we have user ID
     retry: 1,
   });
 
-  // Debug logging
+  useEffect(() => {
+    if (targetUserId) {
+      refetchPosts();
+    }
+  }, [targetUserId, refetchPosts]);
+
   useEffect(() => {
     console.log('ProfilePage state:', {
       userId,
@@ -140,12 +143,10 @@ export const ProfilePage = () => {
 
   useEffect(() => {
     if (profile) {
-      // Ensure interests is an array of strings
       let interestsArray: string[] = [];
       if (Array.isArray(profile.interests)) {
         interestsArray = profile.interests.map(i => typeof i === 'string' ? i : String(i));
       } else if (profile.interests && typeof profile.interests === 'object') {
-        // If it's an object, try to extract values
         interestsArray = Object.values(profile.interests).map(v => String(v));
       } else if (profile.interests) {
         interestsArray = [String(profile.interests)];
@@ -191,47 +192,46 @@ export const ProfilePage = () => {
   };
 
   const handleSave = async () => {
-  if (!currentUser || !isOwnProfile) return;
+    if (!currentUser || !isOwnProfile) return;
 
-  try {
-    setIsSaving(true);
+    try {
+      setIsSaving(true);
 
-    // --- 1. Обновляем остальные поля профиля ---
-    const payload: Partial<Profile> = {
-      display_name: formData.display_name,
-      bio: formData.bio,
-      location: formData.location,
-      gender: formData.gender,
-      interests: formData.interests, // массив строк
-    };
+      if (formData.avatar) {
+        await usersApi.uploadAvatar(formData.avatar);
+      }
+      const payload: Partial<Profile> = {
+        display_name: formData.display_name,
+        bio: formData.bio,
+        location: formData.location,
+        gender: formData.gender,
+        interests: formData.interests, // массив строк
+      };
 
-    await usersApi.updateProfile(payload);
+      await usersApi.updateProfile(payload);
 
-    // --- 2. Если есть аватар, отправляем отдельно ---
-    if (formData.avatar) {
-      await usersApi.uploadAvatar(formData.avatar);
+      setIsEditing(false);
+      await refetchProfile();
+      await refreshUser();
+
+      console.log('Профиль успешно обновлен');
+    } catch (error: any) {
+      console.error('Не удалось обновить профиль:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          'Не удалось обновить профиль. Проверьте правильность введенных данных.';
+      alert(errorMessage);
+    } finally {
+      setIsSaving(false);
     }
-
-    // --- 3. Обновляем локальный стейт и данные ---
-    setIsEditing(false);
-    await refetchProfile();
-    await refreshUser();
-
-    console.log('Профиль успешно обновлен');
-  } catch (error: any) {
-    console.error('Не удалось обновить профиль:', error);
-    alert('Не удалось обновить профиль');
-  } finally {
-    setIsSaving(false);
-  }
-};
+  };
 
 
 
 
   const handleCancel = () => {
     if (profile) {
-      // Ensure interests is an array of strings
       let interestsArray: string[] = [];
       if (Array.isArray(profile.interests)) {
         interestsArray = profile.interests.map(i => typeof i === 'string' ? i : String(i));

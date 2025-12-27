@@ -293,7 +293,7 @@ export const CommunitiesListPage = () => {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {publicCommunities.slice(0, 6).map((community: any, index: number) => {
                   const visibilityInfo = getVisibilityInfo(community.visibility);
-                  const memberCount = community.members_count || Math.floor(Math.random() * 500) + 50;
+                  const memberCount = community.members_count || 0;
                   
                   return (
                     <Card 

@@ -16,6 +16,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
     HTTP_204_NO_CONTENT,
+    HTTP_403_FORBIDDEN,
 )
 from rest_framework.response import Response
 
@@ -122,6 +123,22 @@ class PostViewSet(ViewSet):
                 status=HTTP_400_BAD_REQUEST,
             )
 
+        community_id = request.data.get('community')
+        if community_id:
+            from apps.communities.models import Community
+            try:
+                community = Community.objects.get(id=community_id)
+                if community.owner != request.user:
+                    return DRFResponse(
+                        data={'detail': 'Only the community owner can create posts on behalf of the community'},
+                        status=HTTP_403_FORBIDDEN,
+                    )
+            except Community.DoesNotExist:
+                return DRFResponse(
+                    data={'detail': 'Community not found'},
+                    status=HTTP_404_NOT_FOUND,
+                )
+
         serializer.save(author=request.user)
 
         return DRFResponse(
@@ -195,6 +212,23 @@ class PostViewSet(ViewSet):
                 status=HTTP_404_NOT_FOUND
             )
 
+        # Check if user is the author
+        if post.author != request.user:
+            return DRFResponse(
+                data={'detail': 'You can only edit your own posts'},
+                status=HTTP_403_FORBIDDEN
+            )
+
+        # Check if post can still be edited (time limit)
+        if not post.can_be_edited():
+            return DRFResponse(
+                data={
+                    'detail': f'Post can only be edited within {Post.EDIT_TIME_LIMIT_MINUTES} minutes of creation. '
+                             f'Time limit has passed.'
+                },
+                status=HTTP_400_BAD_REQUEST
+            )
+
         serializer: PostSerializer = PostSerializer(
             data=request.data,
             instance=post,
@@ -202,7 +236,12 @@ class PostViewSet(ViewSet):
             context={'request': request}
         )
 
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
+
+        # Update edited_at timestamp
+        from django.utils import timezone
+        post.edited_at = timezone.now()
+        post.save(update_fields=['edited_at', 'content'])
 
         serializer.save()
 
@@ -233,11 +272,11 @@ class PostViewSet(ViewSet):
         """ Creating DELETE request"""
 
         try:
-            post: Post = self.get_queryset().get(id=kwargs['id'])
+            post: Post = self.get_queryset().get(id=kwargs['pk'])
         except Post.DoesNotExist:
             return DRFResponse(
                 data={
-                    f"Post with that id={kwargs['pk']} does not exists"
+                    'detail': f"Post with that id={kwargs['pk']} does not exists"
                 },
                 status=HTTP_404_NOT_FOUND
             )

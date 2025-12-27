@@ -7,13 +7,16 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { formatDate } from '@/shared/lib/utils';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useState } from 'react';
-import { ArrowLeft, Trash2, Clock, MessageSquare, Heart, Send, Users } from 'lucide-react';
+import { ArrowLeft, Trash2, Clock, MessageSquare, Heart, Send, Users, Edit2, X, Check } from 'lucide-react';
+import { Input } from '@/shared/components/ui/input';
 
 export const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, token } = useAuth(); // <- берём token из контекста
   const [comment, setComment] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
   const queryClient = useQueryClient();
 
   const { data: post, isLoading } = useQuery({
@@ -59,6 +62,25 @@ export const PostDetailPage = () => {
     },
   });
 
+  const updatePostMutation = useMutation({
+    mutationFn: (data: { content: string }) => {
+      if (!token) throw new Error('Не авторизован');
+      return postsApi.update(id!, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post', id] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['user-posts', user.id] });
+      }
+      setIsEditing(false);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 'Не удалось обновить пост';
+      alert(errorMessage);
+    },
+  });
+
   const handleLike = () => {
     if (!user || !token || !post) return;
 
@@ -74,7 +96,27 @@ export const PostDetailPage = () => {
     e.preventDefault();
     if (!comment.trim() || !id || !token) return;
     createCommentMutation.mutate({ content: comment });
-};
+  };
+
+  const handleStartEdit = () => {
+    if (post) {
+      setEditedContent(post.content);
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedContent('');
+  };
+
+  const handleSaveEdit = () => {
+    if (!editedContent.trim() || editedContent === post?.content) {
+      setIsEditing(false);
+      return;
+    }
+    updatePostMutation.mutate({ content: editedContent });
+  };
 
 
 
@@ -111,7 +153,7 @@ export const PostDetailPage = () => {
     );
   }
 
-  const isAuthor = user?.id === post.author;
+  const isAuthor = post.is_author || user?.id === post.author;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-8">
@@ -154,6 +196,12 @@ export const PostDetailPage = () => {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                     <Clock className="h-3 w-3" />
                     <span>{formatDate(post.created_at)}</span>
+                    {post.edited_at && (
+                      <>
+                        <span className="text-xs">•</span>
+                        <span className="text-xs italic">отредактировано {formatDate(post.edited_at)}</span>
+                      </>
+                    )}
                     <span className="text-xs">•</span>
                     <Link 
                       to={`/profile/${post.author}`}
@@ -183,27 +231,87 @@ export const PostDetailPage = () => {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                     <Clock className="h-3 w-3" />
                     <span>{formatDate(post.created_at)}</span>
+                    {post.edited_at && (
+                      <>
+                        <span className="text-xs">•</span>
+                        <span className="text-xs italic">отредактировано {formatDate(post.edited_at)}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </Link>
             )}
             
             {isAuthor && (
-              <Button variant="destructive" size="sm" className="gap-2">
-                <Trash2 className="h-4 w-4" />
-                Удалить
-              </Button>
+              <div className="flex gap-2">
+                {post.can_edit && !isEditing && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={handleStartEdit}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    Редактировать
+                  </Button>
+                )}
+                {!post.can_edit && isAuthor && (
+                  <span className="text-xs text-muted-foreground px-2 py-1">
+                    Редактирование недоступно (прошло более 30 минут)
+                  </span>
+                )}
+                <Button variant="destructive" size="sm" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Удалить
+                </Button>
+              </div>
             )}
           </div>
         </CardHeader>
         
         <CardContent className="pt-6">
           {/* Content */}
-          <div className="prose prose-slate max-w-none mb-6">
-            <p className="text-base leading-relaxed whitespace-pre-wrap">
-              {post.content}
-            </p>
-          </div>
+          {isEditing ? (
+            <div className="space-y-4 mb-6">
+              <Textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                rows={8}
+                className="resize-none"
+                placeholder="Введите текст поста..."
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  disabled={updatePostMutation.isPending || !editedContent.trim()}
+                  className="gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Сохранить
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={updatePostMutation.isPending}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Отмена
+                </Button>
+                {updatePostMutation.isPending && (
+                  <span className="text-sm text-muted-foreground">Сохранение...</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="prose prose-slate max-w-none mb-6">
+              <p className="text-base leading-relaxed whitespace-pre-wrap">
+                {post.content}
+              </p>
+            </div>
+          )}
 
           {/* Tags */}
           {post.tags && post.tags.length > 0 && (

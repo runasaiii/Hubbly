@@ -20,7 +20,8 @@ import {
   FileText,
   TrendingUp,
   Check,
-  Clock
+  Clock,
+  LogOut
 } from 'lucide-react';
 
 export const CommunityDetailPage = () => {
@@ -40,9 +41,25 @@ export const CommunityDetailPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community', id] });
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 'Не удалось вступить в сообщество';
+      alert(errorMessage);
+    },
   });
 
-  // Функция для определения иконки и цвета видимости
+  const leaveMutation = useMutation({
+    mutationFn: () => communitiesApi.leave(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['community', id] });
+      alert('Вы успешно покинули сообщество');
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.detail || 'Не удалось покинуть сообщество';
+      alert(errorMessage);
+    },
+  });
+
+
   const getVisibilityInfo = (visibility: string) => {
     switch (visibility?.toLowerCase()) {
       case 'public':
@@ -181,21 +198,40 @@ export const CommunityDetailPage = () => {
                       Заявка на рассмотрении
                     </Button>
                   ) : (
-                    <Button size="lg" variant="default" className="gap-2 shadow-md" asChild>
-                      <Link to={`/posts/create?community=${id}`}>
-                        <FileText className="h-5 w-5" />
-                        Создать пост
-                      </Link>
-                    </Button>
+                    <>
+                      <div className="px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center gap-2">
+                        <Check className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {membershipRole === 'organizer' ? 'Организатор' : 
+                           membershipRole === 'moderator' ? 'Модератор' : 
+                           'Участник'}
+                        </span>
+                      </div>
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        className="gap-2 shadow-md"
+                        onClick={() => {
+                          if (window.confirm('Вы уверены, что хотите покинуть это сообщество?')) {
+                            leaveMutation.mutate();
+                          }
+                        }}
+                        disabled={leaveMutation.isPending}
+                      >
+                        {leaveMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+                            Выход...
+                          </>
+                        ) : (
+                          <>
+                            <LogOut className="h-5 w-5" />
+                            Покинуть
+                          </>
+                        )}
+                      </Button>
+                    </>
                   )}
-                  <div className="px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center gap-2">
-                    <Check className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {membershipRole === 'organizer' ? 'Организатор' : 
-                       membershipRole === 'moderator' ? 'Модератор' : 
-                       'Участник'}
-                    </span>
-                  </div>
                 </>
               ) : (
                 <>
@@ -284,7 +320,7 @@ export const CommunityDetailPage = () => {
         </CardHeader>
         <CardContent className="pt-6">
           <Link 
-            to={`/profile/${community.owner}`}
+            to={`/profile/${community.owner || ''}`}
             className="flex items-center gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors group"
           >
             <div className="relative">
@@ -367,9 +403,20 @@ export const CommunityDetailPage = () => {
                 onClick={async () => {
                   try {
                     const members = await communitiesApi.getMembers(id!);
-                    alert(`Участников: ${members.length}\n\n${members.map((m: any) => `${m.user_username} (${m.role})`).join('\n')}`);
-                  } catch (error) {
-                    alert('Не удалось загрузить список участников');
+                    if (members.length === 0) {
+                      alert('Участников: 0\n\nВладелец не был добавлен в список участников.');
+                    } else {
+                      const membersList = members.map((m: any) => {
+                        const roleText = m.role === 'organizer' ? 'Владелец' : 
+                                        m.role === 'moderator' ? 'Модератор' : 
+                                        'Участник';
+                        return `${m.user_username} (${roleText})`;
+                      }).join('\n');
+                      alert(`Участников: ${members.length}\n\n${membersList}`);
+                    }
+                  } catch (error: any) {
+                    const errorMessage = error?.response?.data?.detail || 'Не удалось загрузить список участников';
+                    alert(errorMessage);
                   }
                 }}
               >

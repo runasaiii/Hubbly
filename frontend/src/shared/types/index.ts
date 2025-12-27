@@ -80,6 +80,9 @@ export interface Post extends BaseModel {
   is_liked?: boolean;
   liked_by?: Array<{ id: string; username: string }>;
   comment_authors?: Array<{ id: string; username: string }>;
+  edited_at?: string;
+  can_edit?: boolean;
+  is_author?: boolean;
 }
 
 export interface Comment extends BaseModel {
