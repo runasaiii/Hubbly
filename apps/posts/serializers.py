@@ -92,6 +92,8 @@ class PostSerializer(ModelSerializer):
     is_liked: SerializerMethodField = SerializerMethodField()
     liked_by: SerializerMethodField = SerializerMethodField()
     comment_authors: SerializerMethodField = SerializerMethodField()
+    can_edit: SerializerMethodField = SerializerMethodField()
+    is_author: SerializerMethodField = SerializerMethodField()
 
     class Meta:
         model = Post
@@ -106,13 +108,16 @@ class PostSerializer(ModelSerializer):
             'tags',
             'tags_list',
             'created_at',
+            'edited_at',
             'comments_count',
             'likes_count',
             'is_liked',
             'liked_by',
             'comment_authors',
+            'can_edit',
+            'is_author',
         ]
-        read_only_fields = ['id', 'created_at', 'author', 'comments_count', 'likes_count', 'is_liked', 'liked_by', 'comment_authors']
+        read_only_fields = ['id', 'created_at', 'edited_at', 'author', 'comments_count', 'likes_count', 'is_liked', 'liked_by', 'comment_authors', 'can_edit', 'is_author']
 
     def get_community_name(self, obj: Post) -> Optional[str]:
         """Get community name if post belongs to community"""
@@ -160,6 +165,24 @@ class PostSerializer(ModelSerializer):
                 if len(authors_dict) >= 10:  # Limit to first 10 unique authors
                     break
         return list(authors_dict.values())
+
+    def get_can_edit(self, obj: Post) -> bool:
+        """Check if current user can edit this post"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        # Only author can edit
+        if obj.author != request.user:
+            return False
+        # Check time limit
+        return obj.can_be_edited()
+
+    def get_is_author(self, obj: Post) -> bool:
+        """Check if current user is the author"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.author == request.user
 
     def create(self, validated_data: dict[str, Any]) -> Post:
         """Create a new post with tags"""

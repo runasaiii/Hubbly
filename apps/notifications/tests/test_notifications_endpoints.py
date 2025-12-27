@@ -57,7 +57,6 @@ class NotificationEndpointsTests(TestCase):
 
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should only see own notification, not those which are done to other users
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['user'], self.user.id)
 

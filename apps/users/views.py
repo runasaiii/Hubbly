@@ -215,7 +215,7 @@ class CustomUserViewSet(ViewSet):
 
     @extend_schema(
         summary="Retrieve or update user profile",
-        request=ProfileUpdateSerializer,  # используется только для PATCH
+        request=ProfileUpdateSerializer,  # its used only for patch
         responses={
             HTTP_200_OK: OpenApiResponse(
                 description="Profile retrieved (GET) or updated (PATCH) successfully.",
@@ -256,23 +256,30 @@ class CustomUserViewSet(ViewSet):
         elif request.method == 'PATCH':
             data = request.data.copy()
 
-            if 'interests' in data and isinstance(data['interests'], str):
-                import json
-                try:
-                    data['interests'] = json.loads(data['interests'])
-                except json.JSONDecodeError:
+
+            if 'interests' in data:
+                if isinstance(data['interests'], str):
+                    import json
+                    try:
+                        data['interests'] = json.loads(data['interests'])
+                    except json.JSONDecodeError:
+                        data['interests'] = []
+                elif not isinstance(data['interests'], list):
                     data['interests'] = []
+
 
             if 'avatar' in request.FILES:
                 profile.avatar = request.FILES['avatar']
+                profile.save(update_fields=['avatar'])
 
             serializer = ProfileUpdateSerializer(
                 instance=profile,
-                data=data, 
+                data=data,
                 partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
+            profile.refresh_from_db()
             return DRFResponse(ProfileSerializer(profile).data, status=HTTP_200_OK)
 
 

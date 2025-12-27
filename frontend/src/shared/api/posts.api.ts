@@ -18,7 +18,7 @@ export const postsApi = {
     apiClient.delete(`/posts/api/${id}/`),
 
   getUserPosts: (userId: string): Promise<Post[]> =>
-    apiClient.get(`/posts/v1/user/${userId}`),
+    apiClient.get(`/posts/api/user/${userId}/`),
 
   getComments: async (postId: string): Promise<Comment[]> => {
   try {

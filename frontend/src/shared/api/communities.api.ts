@@ -18,9 +18,12 @@ export const communitiesApi = {
     apiClient.delete(`/communities/api/${id}/`),
 
   join: (id: string): Promise<CommunityMembership> =>
-    apiClient.post(`/communities/api/${id}/join/`).catch(() => ({ id: '', user: '', user_username: '', community: id, community_name: '', role: 'member' as const, status: 'pending' as const, joined_at: new Date().toISOString() })),
+    apiClient.post(`/communities/api/${id}/join/`),
 
   getMembers: (id: string): Promise<CommunityMembership[]> =>
-    apiClient.get(`/communities/api/${id}/members/`).catch(() => []),
+    apiClient.get(`/communities/api/${id}/members/`),
+
+  leave: (id: string): Promise<void> =>
+    apiClient.post(`/communities/api/${id}/leave/`),
 };
 

@@ -168,14 +168,14 @@ export const PostsListPage = () => {
                             {post.community_name}
                           </CardTitle>
                           <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
-                            Сообщество
+                            🏘️ Сообщество
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                           <Clock className="h-3 w-3" />
                           <span>{formatDate(post.created_at)}</span>
                           <span className="text-xs">•</span>
-                          <span className="text-xs">от {post.author_username}</span>
+                          <span className="text-xs">создал {post.author_username}</span>
                         </div>
                       </div>
                     </Link>
@@ -188,15 +188,28 @@ export const PostsListPage = () => {
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold text-white shadow-md">
                           {post.author_username?.[0]?.toUpperCase() || 'U'}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <span className="text-[8px] text-white">👤</span>
+                        </div>
                       </div>
                       <div>
-                        <CardTitle className="text-lg hover:text-primary transition-colors cursor-pointer">
-                          {post.author_username}
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg hover:text-primary transition-colors cursor-pointer">
+                            {post.author_username}
+                          </CardTitle>
+                          <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                            👤 Личный пост
+                          </span>
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                           <Clock className="h-3 w-3" />
                           <span>{formatDate(post.created_at)}</span>
+                          {post.edited_at && (
+                            <>
+                              <span className="text-xs">•</span>
+                              <span className="text-xs italic">отредактировано</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </Link>

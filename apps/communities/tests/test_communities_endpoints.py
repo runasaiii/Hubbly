@@ -15,6 +15,7 @@ from apps.communities.models import Community
 
 class CommunityEndpointsTests(TestCase):
     """Tests for community endpoints"""
+    
     def setUp(self):
         self.client = APIClient()
 
