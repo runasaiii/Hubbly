@@ -258,6 +258,33 @@ class PostViewSet(ViewSet):
             status=HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Update a post",
+        request=PostSerializer,
+        responses={
+            HTTP_200_OK: OpenApiResponse(
+                description="Post successfully updated",
+                response=PostSerializer,
+            ),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Invalid data",
+                response=PostResponseSerializer,
+            ),
+            HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Post with this ID does not exist",
+                response=PostNotFoundSerializer,
+            ),
+        }
+    )
+    def update(
+            self,
+            request: DRFRequest,
+            *args: tuple[Any, ...],
+            **kwargs: dict[str, Any],
+    ) -> DRFResponse:
+        """Creating PUT request - uses partial_update logic"""
+        # PUT и PATCH обрабатываются одинаково (частичное обновление)
+        return self.partial_update(request, *args, **kwargs)
 
     @extend_schema(
         summary="Delete a post",
