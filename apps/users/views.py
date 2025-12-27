@@ -267,7 +267,7 @@ class CustomUserViewSet(ViewSet):
                 profile.avatar = request.FILES['avatar']
 
             serializer = ProfileUpdateSerializer(
-                to=profile, 
+                instance=profile,
                 data=data, 
                 partial=True)
             serializer.is_valid(raise_exception=True)
