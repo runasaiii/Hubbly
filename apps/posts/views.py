@@ -32,6 +32,7 @@ from .serializers import (
 )
 from .filters import PostFilter
 from apps.users.models import CustomUser
+from .permissions import IsPostAuthor
 
 # Swagger modules
 from drf_spectacular.utils import extend_schema, OpenApiResponse
@@ -40,7 +41,14 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 class PostViewSet(ViewSet):
     """ViewSet for handling post related endpoints"""
     
-    permission_classes = (IsAuthenticated,)
+    def get_permissions(self):
+        if self.action in ('partial_update', 'destroy'):
+            permission_classes = (IsAuthenticated, IsPostAuthor)
+        else:
+            permission_classes = (IsAuthenticated,)
+
+        return [permission() for permission in permission_classes]
+
     filterset_class = PostFilter
 
     def get_queryset(self) -> QuerySet[Post]:

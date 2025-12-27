@@ -20,6 +20,7 @@ from rest_framework.status import (
 )
 
 # Project Modules
+from .permissions import IsEventOrganizer
 from .models import Event
 from .serializers import (
     EventSerializer,
@@ -34,8 +35,15 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 class EventViewSet(ViewSet):
     """ViewSet for handling event related endpoints"""
-    
-    permission_classes = (IsAuthenticated,)
+
+    def get_permissions(self):
+        if self.action in ('partial_update', 'destroy'):
+            permission_classes = (IsAuthenticated, IsEventOrganizer)
+        else:
+            permission_classes = (IsAuthenticated,)
+
+        return [permission() for permission in permission_classes]
+
     serializer_class = EventSerializer
     filterset_class = EventFilter
 

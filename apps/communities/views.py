@@ -22,8 +22,11 @@ from rest_framework.status import (
 )
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+from rest_framework.permissions import IsAuthenticated
+
 
 # App modules
+from .permissions import IsCommunityOwner
 from .models import Community, CommunityMembership
 from .serializers import (
     CommunitySerializer,
@@ -41,6 +44,14 @@ class CommunityViewSet(ViewSet):
 
     """ViewSet for handling community related endpoints"""
     filterset_class = CommunityFilter
+
+    def get_permissions(self):
+        if self.action in ('partial_update', 'destroy'):
+            permission_classes = (IsAuthenticated, IsCommunityOwner)
+        else:
+            permission_classes = (IsAuthenticated,)
+
+        return [permission() for permission in permission_classes]
 
     @extend_schema(
         summary="Get a specific community by ID",
