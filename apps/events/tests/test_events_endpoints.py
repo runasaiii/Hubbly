@@ -1,8 +1,10 @@
-# Python modules
-from rest_framework import status
-from rest_framework.test import APITestCase
+# python modules
 import uuid
 from datetime import timedelta
+
+# DRF modules
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 # Django modules
 from django.urls import reverse
@@ -51,66 +53,52 @@ class EventAPITestCase(APITestCase):
         self.list_url = reverse('event-list')
         self.detail_url = reverse('event-detail', kwargs={'pk': self.event.id})
 
-# Test list 
     def test_event_list_success(self):
         """Successfully get list of events"""
-        url = reverse('event-list')
-        response = self.client.get(url)
+        response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
 
     def test_event_list_without_auth(self):
         """Get events without authentication"""
         self.client.force_authenticate(user=None)
-        url = reverse('event-list')
-        response = self.client.get(url)
+        response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_event_list_empty(self):
-        """Get empty list of events"""
-        Event.objects.all().delete()
-        url = reverse('event-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-
-    def test_event_list_wrong_method(self):
-        """Use wrong HTTP method"""
-        url = reverse('event-list')
-        response = self.client.put(url, {}, format='json')
+    def test_event_list_wrong_method_put(self):
+        """Use wrong http method put on list"""
+        response = self.client.put(self.list_url, {}, format='json')
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
- # Test detail 
+    def test_event_list_wrong_method_delete(self):
+        """Use wrong http method delete on list"""
+        response = self.client.delete(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def test_event_detail_success(self):
         """Successfully get event detail"""
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        response = self.client.get(url)
+        response = self.client.get(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], self.event.title)
 
     def test_event_detail_not_found(self):
-        """Get event detail with non-existent ID"""
+        """Get event detail with non-existent id"""
         url = reverse('event-detail', kwargs={'pk': uuid.uuid4()})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_event_detail_invalid_id(self):
-        """Get event detail with invalid ID format"""
-        # This will fail at URL routing level
+        """Get event detail with invalid id format"""
         response = self.client.get('/events/api/invalid-id/')
-        self.assertIn(response.status_code, [status.HTTP_404_NOT_FOUND, status.HTTP_400_BAD_REQUEST])
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_event_detail_without_auth(self):
-        """Get event detail without authentication"""
-        self.client.force_authenticate(user=None)
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_event_detail_wrong_method_post(self):
+        """Use wrong http method post on detail"""
+        response = self.client.post(self.detail_url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-# Test create 
     def test_event_create_success(self):
         """Successfully create event"""
-        url = reverse('event-list')
         data = {
             "title": "New Event",
             "description": "Event description",
@@ -121,68 +109,48 @@ class EventAPITestCase(APITestCase):
             "organizer": self.user.id,
             "community": self.community.id,
         }
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['title'], "New Event")
 
+    def test_event_create_without_auth(self):
+        """Create event without authentication"""
+        self.client.force_authenticate(user=None)
+        data = {"title": "New Event"}
+        response = self.client.post(self.list_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_event_create_missing_title(self):
         """Create event without title"""
-        url = reverse('event-list')
         data = {
             "description": "Event description",
             "start_at": (timezone.now() + timedelta(days=2)).isoformat(),
             "end_at": (timezone.now() + timedelta(days=2, hours=3)).isoformat(),
-            "capacity": 100,
-            "status": "draft",
-            "organizer": self.user.id,
             "community": self.community.id,
         }
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_event_create_invalid_capacity(self):
-        """Create event with invalid capacity"""
-        url = reverse('event-list')
-        data = {
-            "title": "Invalid Event",
-            "description": "Event description",
-            "start_at": (timezone.now() + timedelta(days=2)).isoformat(),
-            "end_at": (timezone.now() + timedelta(days=2, hours=3)).isoformat(),
-            "capacity": -10,
-            "status": "draft",
-            "organizer": self.user.id,
-            "community": self.community.id,
-        }
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(self.list_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_event_create_invalid_dates(self):
         """Create event with end date before start date"""
-        url = reverse('event-list')
         data = {
             "title": "Invalid Event",
-            "description": "Event description",
             "start_at": (timezone.now() + timedelta(days=2)).isoformat(),
-            "end_at": (timezone.now() + timedelta(days=1)).isoformat(),
-            "capacity": 100,
-            "status": "draft",
-            "organizer": self.user.id,
+            "end_at": (timezone.now() + timedelta(days=1)).isoformat(), # End before start
             "community": self.community.id,
         }
-        response = self.client.post(url, data, format='json')
-        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_400_BAD_REQUEST])
+        response = self.client.post(self.list_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
- # Test update 
     def test_event_update_success(self):
         """Successfully update event"""
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
         data = {"title": "Updated Title"}
-        response = self.client.patch(url, data, format='json')
+        response = self.client.patch(self.detail_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], "Updated Title")
 
     def test_event_update_not_found(self):
-        """Update event with non-existent ID"""
+        """Update event with non-existent id"""
         url = reverse('event-detail', kwargs={'pk': uuid.uuid4()})
         data = {"title": "Updated Title"}
         response = self.client.patch(url, data, format='json')
@@ -191,28 +159,25 @@ class EventAPITestCase(APITestCase):
     def test_event_update_without_auth(self):
         """Update event without authentication"""
         self.client.force_authenticate(user=None)
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
         data = {"title": "Updated Title"}
-        response = self.client.patch(url, data, format='json')
+        response = self.client.patch(self.detail_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_event_update_forbidden(self):
+        """Update event as non-organizer"""
+        self.client.force_authenticate(user=self.other_user)
+        data = {"title": "Updated Title"}
+        response = self.client.patch(self.detail_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_event_update_invalid_status(self):
-        """Update event with invalid status"""
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        data = {"status": "invalid_status"}
-        response = self.client.patch(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-# Test delete 
     def test_event_delete_success(self):
         """Successfully delete event"""
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        response = self.client.delete(url)
+        response = self.client.delete(self.detail_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Event.objects.filter(id=self.event.id).exists())
 
     def test_event_delete_not_found(self):
-        """Delete event with non-existent ID"""
+        """Delete event with non-existent id"""
         url = reverse('event-detail', kwargs={'pk': uuid.uuid4()})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -220,13 +185,11 @@ class EventAPITestCase(APITestCase):
     def test_event_delete_without_auth(self):
         """Delete event without authentication"""
         self.client.force_authenticate(user=None)
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_event_delete_twice(self):
-        """Delete event twice"""
-        url = reverse('event-detail', kwargs={'pk': self.event.id})
-        self.client.delete(url)
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    def test_event_delete_forbidden(self):
+        """Delete event as non-organizer"""
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

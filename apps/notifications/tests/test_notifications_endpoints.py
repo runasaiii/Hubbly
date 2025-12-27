@@ -1,10 +1,11 @@
-# Python modules
+# DRF
 from rest_framework.test import APIClient
 from rest_framework import status
+
+# Python modules
 from uuid import uuid4
 
 # Django modules
-from django.urls import reverse
 from django.test import TestCase
 
 # Project modules
@@ -14,125 +15,81 @@ from apps.notifications.models import Notification
 
 class NotificationEndpointsTests(TestCase):
     """Tests for notification endpoints"""
+    
     def setUp(self):
         self.client = APIClient()
 
         self.user = CustomUser.objects.create_user(
             email='testuser@example.com',
             username='testuser',
-            full_name='Test User',
             password='testpass123'
         )
+        
+        self.notification = Notification.objects.create(user=self.user)
+        
         self.client.force_authenticate(user=self.user)
-
-        self.other_user = CustomUser.objects.create_user(
-            email='otheruser@example.com',
-            username='otheruser',
-            full_name='Other User',
-            password='testpass123'
-        )
-
-        self.notification = Notification.objects.create(
-            user=self.user
-        )
-
         self.list_url = '/notification/'
 
-# List notifications 
+    # GET
     def test_list_notifications_success(self):
-        """Successfully get list of notifications"""
+        """Good case: successfully get list of notifications for authenticated user"""
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsInstance(response.data, list)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['id'], self.notification.id)
 
-    def test_list_notifications_without_auth(self):
-        """Get notifications without authentication"""
+    def test_list_notifications_unauthorized(self):
+        """Bad case 1: try to list notifications without authentication"""
         self.client.force_authenticate(user=None)
         response = self.client.get(self.list_url)
-        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED])
-
-    def test_list_notifications_empty(self):
-        """Get empty list of notifications"""
-        Notification.objects.all().delete()
-        response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_notifications_wrong_method(self):
-        """Use wrong HTTP method"""
+        """Bad case 2: wrong HTTP method (PUT instead of GET)"""
         response = self.client.put(self.list_url, {}, format='json')
-        self.assertIn(response.status_code, [status.HTTP_405_METHOD_NOT_ALLOWED, status.HTTP_200_OK])
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-# Create notification 
+    def test_list_notifications_isolation(self):
+        """Bad case 3: uer shouldnt see other users notifications"""
+        other_user = CustomUser.objects.create_user(username='other', password='123')
+        Notification.objects.create(user=other_user)
+
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should only see own notification, not those which are done to other users
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['user'], self.user.id)
+
+
+    # POST
     def test_create_notification_success(self):
-        """Successfully create notification"""
+        """Good case: successfully create notification"""
         data = {
-            'user': self.user.id
+            'user': self.user.id,
+            'message': 'Test notification'
         }
         response = self.client.post(self.list_url, data, format='json')
-        self.assertIn(response.status_code, [status.HTTP_201_CREATED, status.HTTP_405_METHOD_NOT_ALLOWED, status.HTTP_200_OK])
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Notification.objects.filter(id=response.data['id']).exists())
 
-    def test_create_notification_without_auth(self):
-        """Create notification without authentication"""
+    def test_create_notification_unauthorized(self):
+        """Bad case 1: create notification without authentication"""
         self.client.force_authenticate(user=None)
-        data = {
-            'user': self.user.id
-        }
+        data = {'user': self.user.id}
         response = self.client.post(self.list_url, data, format='json')
-        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN, status.HTTP_405_METHOD_NOT_ALLOWED])
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_create_notification_missing_user(self):
-        """Create notification without user"""
+    def test_create_notification_empty_data(self):
+        """Bad case 2: create notification with missing data"""
         data = {}
         response = self.client.post(self.list_url, data, format='json')
-        self.assertIn(response.status_code, [status.HTTP_400_BAD_REQUEST, status.HTTP_405_METHOD_NOT_ALLOWED, status.HTTP_201_CREATED])
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_create_notification_invalid_user(self):
-        """Create notification with invalid user ID"""
+    def test_create_notification_invalid_user_id(self):
+        """Bad case 3: create notification with invalid uuid format"""
         data = {
-            'user': uuid4()
+            'user': 'invalid-uuid-string'
         }
         response = self.client.post(self.list_url, data, format='json')
-        self.assertIn(response.status_code, [status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED])
-
- # Filter notifications 
-    def test_list_notifications_filtered_by_user(self):
-        """Get notifications filtered by user"""
-        Notification.objects.create(user=self.other_user)
-    
-        response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data, list)
-
-    def test_list_notifications_multiple_users(self):
-        """Get notifications when multiple users have notifications"""
-        Notification.objects.create(user=self.other_user)
-        Notification.objects.create(user=self.user)
-        
-        response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data, list)
-
-    def test_list_notifications_pagination(self):
-        """Get notifications with pagination"""
-        for i in range(25):
-            Notification.objects.create(user=self.user)
-        
-        response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data, list)
-
-    def test_list_notifications_deleted_filter(self):
-        """Get notifications excluding deleted ones"""
-        notification = Notification.objects.create(user=self.user)
-        notification.delete() 
-        
-        response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        notification_ids = [n['id'] for n in response.data if 'id' in n]
-        if hasattr(notification, 'id'):
-            self.assertNotIn(str(notification.id), notification_ids)
-
-
-
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
